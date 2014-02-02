@@ -1,0 +1,173 @@
+#!/usr/bin/env python
+import sys, os.path
+
+import gi
+from gi.repository import Gegl, Gtk, Gdk
+from gi.repository import GeglGtk3 as GeglGtk
+
+from lib import tiledsurface, brush
+
+def print_connections(node):
+    def print_node(node, i=0):
+        print("  " * i + node.get_operation())
+        # FIMXE use gegl_operation_list_properties if that is in the
+        # introspection bindings
+        for input_pad in ['input', 'aux']:
+            connected_node = node.get_producer(input_pad, None)
+            if connected_node is not None:
+                print_node(connected_node, i+1)
+
+    print_node(node)
+    print("")
+
+
+class Cel(object):
+    def __init__(self):
+        self.surface = tiledsurface.GeglSurface()
+        self.surface_node = self.surface.get_node()
+
+
+class Timeline(object):
+    def __init__(self, length):
+        self.idx = 0
+        self.frames = []
+        for idx in range(length):
+            self.frames.append(Cel())
+
+    def go_previous(self):
+        if self.idx == 0:
+            return
+        self.idx -= 1
+
+    def go_next(self):
+        if self.idx == len(self.frames)-1:
+            return
+        self.idx += 1
+
+    def get_cel(self, idx=None):
+        if idx is None:
+            idx = self.idx
+
+        return self.frames[idx]
+
+
+class FlipbookApp(object):
+    def __init__(self):
+        brush_file = open('brushes/classic/charcoal.myb')
+        brush_info = brush.BrushInfo(brush_file.read())
+        brush_info.set_color_rgb((0.0, 0.0, 0.0))
+        self.brush = brush.Brush(brush_info)
+
+        self.button_pressed = False
+        self.last_event = (0.0, 0.0, 0.0) # (x, y, time)
+
+        self.surface = None
+        self.surface_node = None
+
+        self.timeline = Timeline(10)
+        self.update_surface()
+
+        self.create_graph()
+        self.init_ui()
+
+
+    def create_graph(self):
+        self.graph = Gegl.Node()
+
+        background_node = self.graph.create_child("gegl:color")
+        background_node.set_property('value', Gegl.Color.new("#fff"))
+
+        self.crop = self.graph.create_child("gegl:crop")
+
+        self.over = self.graph.create_child("gegl:over")
+
+        background_node.connect_to("output", self.crop, "input")
+        self.crop.connect_to("output", self.over, "input")
+
+        self.surface_node.connect_to("output", self.over, "aux")
+
+    def update_graph(self):
+        self.surface_node.connect_to("output", self.over, "aux")
+
+        # debug
+        print_connections(self.over)
+
+    def init_ui(self):
+        window = Gtk.Window()
+        window.connect("destroy", self.destroy_cb)
+        window.connect("size-allocate", self.size_allocate_cb)
+        window.connect("key-release-event", self.key_release_cb)
+
+        top_box = Gtk.VBox()
+        window.add(top_box)
+
+        event_box = Gtk.EventBox()
+        event_box.connect("motion-notify-event", self.motion_to_cb)
+        event_box.connect("button-press-event", self.button_press_cb)
+        event_box.connect("button-release-event", self.button_release_cb)
+        top_box.pack_start(event_box, expand=True, fill=True, padding=0)
+
+        self.view_widget = GeglGtk.View()
+        self.view_widget.set_node(self.graph.get_children()[0])
+        self.view_widget.set_autoscale_policy(GeglGtk.ViewAutoscale.DISABLED)
+        self.view_widget.set_size_request(800, 400)
+        event_box.add(self.view_widget)
+
+        window.show_all()
+
+    def run(self):
+        return Gtk.main()
+
+    def destroy_cb(self, *ignored):
+        Gtk.main_quit()
+
+    def size_allocate_cb(self, widget, allocation):
+        self.crop.set_property("x", allocation.x)
+        self.crop.set_property("y", allocation.y)
+        self.crop.set_property("width", allocation.width)
+        self.crop.set_property("height", allocation.height)
+
+    def motion_to_cb(self, widget, event):
+        (x, y, time) = event.x, event.y, event.time
+
+        pressure = 0.5
+        dtime = (time - self.last_event[2])/1000.0
+        if self.button_pressed:
+            self.surface.begin_atomic()
+            self.brush.stroke_to(self.surface.backend, x, y, pressure, 0.0, 0.0, dtime)
+            self.surface.end_atomic()
+
+        self.last_event = (x, y, time)
+
+    def button_press_cb(self, widget, event):
+        self.button_pressed = True
+
+    def button_release_cb(self, widget, event):
+        self.button_pressed = False
+        self.brush.reset()
+
+    def update_surface(self):
+        cel = self.timeline.get_cel()
+        self.surface = cel.surface
+        self.surface_node = cel.surface_node
+
+    def key_release_cb(self, widget, event):
+        if event.keyval == Gdk.KEY_Left:
+            self.timeline.go_previous()
+            print(self.timeline.idx)
+            self.update_surface()
+            self.update_graph()
+
+        elif event.keyval == Gdk.KEY_Right:
+            self.timeline.go_next()
+            print(self.timeline.idx)
+            self.update_surface()
+            self.update_graph()
+
+
+if __name__ == '__main__':
+    Gegl.init([])
+    Gtk.init([])
+
+    app = FlipbookApp()
+    app.run()
