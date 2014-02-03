@@ -99,80 +99,40 @@ class FlipbookApp(object):
         self.crop = self.graph.create_child("gegl:crop")
 
         self.over = self.graph.create_child("gegl:over")
-        self.over_prev1 = None
-        self.over_prev2 = None
-        self.opacity_prev1 = None
-        self.opacity_prev2 = None
+        self.over_prev1 = self.graph.create_child("gegl:over")
+        self.opacity_prev1 = self.graph.create_child("gegl:opacity")
+        self.opacity_prev1.set_property('value', 0.3)
+        self.over_prev2 = self.graph.create_child("gegl:over")
+        self.opacity_prev2 = self.graph.create_child("gegl:opacity")
+        self.opacity_prev2.set_property('value', 0.3)
 
         background_node.connect_to("output", self.crop, "input")
         self.crop.connect_to("output", self.over, "input")
 
+        self.over_prev1.connect_to("output", self.over, "aux")
+        self.opacity_prev1.connect_to("output", self.over_prev1, "aux")
+        self.over_prev2.connect_to("output", self.opacity_prev1, "input")
+        self.opacity_prev2.connect_to("output", self.over_prev2, "aux")
+
         self.update_graph()
 
     def update_graph(self):
+        self.surface_node.connect_to("output", self.over_prev1, "input")
+
         prev_cel1 = self.timeline.get_cel(self.timeline.idx-1)
         if prev_cel1:
             prev_surface1 = prev_cel1.surface
             prev_surface_node1 = prev_cel1.surface_node
+            prev_surface_node1.connect_to("output", self.over_prev2, "input")
 
         prev_cel2 = self.timeline.get_cel(self.timeline.idx-2)
         if prev_cel2:
             prev_surface2 = prev_cel2.surface
             prev_surface_node2 = prev_cel2.surface_node
-
-        if prev_cel1 and prev_cel2:
-            if self.over_prev1 is None:
-                self.over_prev1 = self.graph.create_child("gegl:over")
-                self.opacity_prev1 = self.graph.create_child("gegl:opacity")
-                self.opacity_prev1.set_property('value', 0.3)
-
-            if self.over_prev2 is None:
-                self.over_prev2 = self.graph.create_child("gegl:over")
-                self.opacity_prev2 = self.graph.create_child("gegl:opacity")
-                self.opacity_prev2.set_property('value', 0.3)
-
-            self.over_prev1.connect_to("output", self.over, "aux")
-            self.surface_node.connect_to("output", self.over_prev1, "input")
-            self.opacity_prev1.connect_to("output", self.over_prev1, "aux")
-            self.over_prev2.connect_to("output", self.opacity_prev1, "input")
-            prev_surface_node1.connect_to("output", self.over_prev2, "input")
-            self.opacity_prev2.connect_to("output", self.over_prev2, "aux")
             prev_surface_node2.connect_to("output", self.opacity_prev2, "input")
 
-        elif prev_cel1:
-            if self.over_prev1 is None:
-                self.over_prev1 = self.graph.create_child("gegl:over")
-                self.opacity_prev1 = self.graph.create_child("gegl:opacity")
-                self.opacity_prev1.set_property('value', 0.3)
-
-            if self.over_prev2 is not None:
-                self.graph.remove_child(self.over_prev2)
-                self.over_prev2 = None
-                self.graph.remove_child(self.opacity_prev2)
-                self.opacity_prev2 = None
-
-            self.over_prev1.connect_to("output", self.over, "aux")
-            self.surface_node.connect_to("output", self.over_prev1, "input")
-            self.opacity_prev1.connect_to("output", self.over_prev1, "aux")
-            prev_surface_node1.connect_to("output", self.opacity_prev1, "input")
-
-        else:
-            if self.over_prev1 is not None:
-                self.graph.remove_child(self.over_prev1)
-                self.over_prev1 = None
-                self.graph.remove_child(self.opacity_prev1)
-                self.opacity_prev1 = None
-
-            if self.over_prev2 is not None:
-                self.graph.remove_child(self.over_prev2)
-                self.over_prev2 = None
-                self.graph.remove_child(self.opacity_prev2)
-                self.opacity_prev2 = None
-
-            self.surface_node.connect_to("output", self.over, "aux")
-
         # debug
-        print_connections(self.over)
+        # print_connections(self.over)
 
     def init_ui(self):
         window = Gtk.Window()
@@ -190,7 +150,7 @@ class FlipbookApp(object):
         top_box.pack_start(event_box, expand=True, fill=True, padding=0)
 
         self.view_widget = GeglGtk.View()
-        self.view_widget.set_node(self.graph.get_children()[0])
+        self.view_widget.set_node(self.over)
         self.view_widget.set_autoscale_policy(GeglGtk.ViewAutoscale.DISABLED)
         self.view_widget.set_size_request(800, 400)
         event_box.add(self.view_widget)
