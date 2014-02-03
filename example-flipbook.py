@@ -2,7 +2,7 @@
 import sys, os.path
 
 import gi
-from gi.repository import Gegl, Gtk, Gdk
+from gi.repository import Gegl, Gtk, Gdk, GObject
 from gi.repository import GeglGtk3 as GeglGtk
 
 from lib import tiledsurface, brush
@@ -34,15 +34,29 @@ class Timeline(object):
         for idx in range(length):
             self.frames.append(Cel())
 
-    def go_previous(self):
-        if self.idx == 0:
-            return
-        self.idx -= 1
+    def go_previous(self, loop=False):
+        if not loop:
+            if self.idx == 0:
+                return False
+        else:
+            if self.idx == 0:
+                self.idx = len(self.frames)-1
+                return True
 
-    def go_next(self):
-        if self.idx == len(self.frames)-1:
-            return
+        self.idx -= 1
+        return True
+
+    def go_next(self, loop=False):
+        if not loop:
+            if self.idx == len(self.frames)-1:
+                return False
+        else:
+            if self.idx == len(self.frames)-1:
+                self.idx = 0
+                return True
+
         self.idx += 1
+        return True
 
     def get_cel(self, idx=None):
         if idx is None:
@@ -66,6 +80,8 @@ class FlipbookApp(object):
 
         self.surface = None
         self.surface_node = None
+
+        self.play_hid = None
 
         self.timeline = Timeline(10)
         self.update_surface()
@@ -217,19 +233,36 @@ class FlipbookApp(object):
         self.surface = cel.surface
         self.surface_node = cel.surface_node
 
+    def go_previous(self, loop=False):
+        changed = self.timeline.go_previous(loop)
+        if changed:
+            self.update_surface()
+            self.update_graph()
+
+        return changed
+
+    def go_next(self, loop=False):
+        changed = self.timeline.go_next(loop)
+        if changed:
+            self.update_surface()
+            self.update_graph()
+
+        return changed
+
+    def toggle_play_stop(self):
+        if self.play_hid == None:
+            self.play_hid = GObject.timeout_add(42, self.go_next, True)
+        else:
+            GObject.source_remove(self.play_hid)
+            self.play_hid = None
+
     def key_release_cb(self, widget, event):
         if event.keyval == Gdk.KEY_Left:
-            self.timeline.go_previous()
-            print(self.timeline.idx)
-            self.update_surface()
-            self.update_graph()
-
+            self.go_previous()
         elif event.keyval == Gdk.KEY_Right:
-            self.timeline.go_next()
-            print(self.timeline.idx)
-            self.update_surface()
-            self.update_graph()
-
+            self.go_next()
+        elif event.keyval == Gdk.KEY_p:
+            self.toggle_play_stop()
 
 if __name__ == '__main__':
     Gegl.init([])
