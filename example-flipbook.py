@@ -48,6 +48,9 @@ class Timeline(object):
         if idx is None:
             idx = self.idx
 
+        if idx < 0 or idx > len(self.frames)-1:
+            return False
+
         return self.frames[idx]
 
 
@@ -80,14 +83,59 @@ class FlipbookApp(object):
         self.crop = self.graph.create_child("gegl:crop")
 
         self.over = self.graph.create_child("gegl:over")
+        self.over_prev1 = None
+        self.over_prev2 = None
 
         background_node.connect_to("output", self.crop, "input")
         self.crop.connect_to("output", self.over, "input")
 
-        self.surface_node.connect_to("output", self.over, "aux")
+        self.update_graph()
 
     def update_graph(self):
-        self.surface_node.connect_to("output", self.over, "aux")
+        prev_cel1 = self.timeline.get_cel(self.timeline.idx-1)
+        if prev_cel1:
+            print("prev cel1 exists")
+            prev_surface1 = prev_cel1.surface
+            prev_surface_node1 = prev_cel1.surface_node
+
+        prev_cel2 = self.timeline.get_cel(self.timeline.idx-2)
+        if prev_cel2:
+            print("prev cel2 exists")
+            prev_surface2 = prev_cel2.surface
+            prev_surface_node2 = prev_cel2.surface_node
+
+        if prev_cel1 and prev_cel2:
+            if self.over_prev1 is None:
+                self.over_prev1 = self.graph.create_child("gegl:over")
+            if self.over_prev2 is None:
+                self.over_prev2 = self.graph.create_child("gegl:over")
+
+            self.over_prev1.connect_to("output", self.over, "aux")
+            self.surface_node.connect_to("output", self.over_prev1, "input")
+            self.over_prev2.connect_to("output", self.over_prev1, "aux")
+            prev_surface_node1.connect_to("output", self.over_prev2, "input")
+            prev_surface_node2.connect_to("output", self.over_prev2, "aux")
+
+        elif prev_cel1:
+            if self.over_prev1 is None:
+                self.over_prev1 = self.graph.create_child("gegl:over")
+            if self.over_prev2 is not None:
+                self.graph.remove_child(self.over_prev2)
+                self.over_prev2 = None
+
+            self.over_prev1.connect_to("output", self.over, "aux")
+            self.surface_node.connect_to("output", self.over_prev1, "input")
+            prev_surface_node1.connect_to("output", self.over_prev1, "aux")
+
+        else:
+            if self.over_prev1 is not None:
+                self.graph.remove_child(self.over_prev1)
+                self.over_prev1 = None
+            if self.over_prev2 is not None:
+                self.graph.remove_child(self.over_prev2)
+                self.over_prev2 = None
+
+            self.surface_node.connect_to("output", self.over, "aux")
 
         # debug
         print_connections(self.over)
