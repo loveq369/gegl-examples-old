@@ -93,10 +93,8 @@ class FlipbookApp(object):
     def create_graph(self):
         self.graph = Gegl.Node()
 
-        background_node = self.graph.create_child("gegl:color")
-        background_node.set_property('value', Gegl.Color.new("#fff"))
-
-        self.crop = self.graph.create_child("gegl:crop")
+        self.background_node = self.graph.create_child("gegl:rectangle")
+        self.background_node.set_property('color', Gegl.Color.new("#fff"))
 
         self.over = self.graph.create_child("gegl:over")
         self.over_prev1 = self.graph.create_child("gegl:over")
@@ -106,8 +104,7 @@ class FlipbookApp(object):
         self.opacity_prev2 = self.graph.create_child("gegl:opacity")
         self.opacity_prev2.set_property('value', 0.3)
 
-        background_node.connect_to("output", self.crop, "input")
-        self.crop.connect_to("output", self.over, "input")
+        self.background_node.connect_to("output", self.over, "input")
 
         self.over_prev1.connect_to("output", self.over, "aux")
         self.opacity_prev1.connect_to("output", self.over_prev1, "aux")
@@ -164,10 +161,8 @@ class FlipbookApp(object):
         Gtk.main_quit()
 
     def size_allocate_cb(self, widget, allocation):
-        self.crop.set_property("x", allocation.x)
-        self.crop.set_property("y", allocation.y)
-        self.crop.set_property("width", allocation.width)
-        self.crop.set_property("height", allocation.height)
+        self.background_node.set_property("width", allocation.width)
+        self.background_node.set_property("height", allocation.height)
 
     def motion_to_cb(self, widget, event):
         (x, y, time) = event.x, event.y, event.time
