@@ -146,11 +146,11 @@ class FlipbookApp(object):
         event_box.connect("button-release-event", self.button_release_cb)
         top_box.pack_start(event_box, expand=True, fill=True, padding=0)
 
-        self.view_widget = GeglGtk.View()
-        self.view_widget.set_node(self.over)
-        self.view_widget.set_autoscale_policy(GeglGtk.ViewAutoscale.DISABLED)
-        self.view_widget.set_size_request(800, 400)
-        event_box.add(self.view_widget)
+        view_widget = GeglGtk.View()
+        view_widget.set_node(self.over)
+        view_widget.set_autoscale_policy(GeglGtk.ViewAutoscale.DISABLED)
+        view_widget.set_size_request(800, 400)
+        event_box.add(view_widget)
 
         window.show_all()
 
