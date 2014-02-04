@@ -105,7 +105,6 @@ class FlipbookApp(object):
         self.opacity_prev2.set_property('value', 0.3)
 
         self.background_node.connect_to("output", self.over, "input")
-
         self.over_prev1.connect_to("output", self.over, "aux")
         self.opacity_prev1.connect_to("output", self.over_prev1, "aux")
         self.over_prev2.connect_to("output", self.opacity_prev1, "input")
@@ -118,13 +117,11 @@ class FlipbookApp(object):
 
         prev_cel1 = self.timeline.get_cel(self.timeline.idx-1)
         if prev_cel1:
-            prev_surface1 = prev_cel1.surface
             prev_surface_node1 = prev_cel1.surface_node
             prev_surface_node1.connect_to("output", self.over_prev2, "input")
 
         prev_cel2 = self.timeline.get_cel(self.timeline.idx-2)
         if prev_cel2:
-            prev_surface2 = prev_cel2.surface
             prev_surface_node2 = prev_cel2.surface_node
             prev_surface_node2.connect_to("output", self.opacity_prev2, "input")
 
