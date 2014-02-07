@@ -7,18 +7,45 @@ from gi.repository import GeglGtk3 as GeglGtk
 
 from lib import tiledsurface, brush
 
-def print_connections(node):
-    def print_node(node, i=0):
-        print("  " * i + node.get_operation())
-        # FIMXE use gegl_operation_list_properties if that is in the
-        # introspection bindings
-        for input_pad in ['input', 'aux']:
-            connected_node = node.get_producer(input_pad, None)
-            if connected_node is not None:
-                print_node(connected_node, i+1)
+def print_connections(node, format='simple'):
+    if format == 'xml':
+        print(node.to_xml('/'))
+        return
 
-    print_node(node)
-    print("")
+    elif format == 'simple':
+        def print_node(node, i=0):
+            print("  " * i + node.get_operation())
+            # FIMXE use gegl_operation_list_properties if that is in the
+            # introspection bindings
+            for input_pad in ['input', 'aux']:
+                connected_node = node.get_producer(input_pad, None)
+                if connected_node is not None:
+                    print_node(connected_node, i+1)
+
+        print_node(node)
+        print("")
+        return
+
+    elif format == 'json':
+        import json
+
+        def node_to_dict(node):
+            data = {}
+            data['label'] = node.get_operation()
+            data['children'] = {}
+
+            # FIMXE use gegl_operation_list_properties if that is in the
+            # introspection bindings
+            for input_pad in ['input', 'aux']:
+                connected_node = node.get_producer(input_pad, None)
+                if connected_node is not None:
+                    data['children'][input_pad] = node_to_dict(connected_node)
+
+            return data
+
+        print(json.dumps(node_to_dict(node)))
+        print("")
+        return
 
 
 class Cel(object):
@@ -144,7 +171,7 @@ class FlipbookApp(object):
             self.add_next.disconnect("input")
 
         # debug
-        # print_connections(self.over)
+        print_connections(self.over, format="json")
 
     def init_ui(self):
         window = Gtk.Window()
