@@ -78,6 +78,8 @@ class FlipbookApp(object):
         self.button_pressed = False
         self.last_event = (0.0, 0.0, 0.0) # (x, y, time)
 
+        self.onionskin_on = True
+
         self.surface = None
         self.surface_node = None
 
@@ -97,33 +99,40 @@ class FlipbookApp(object):
         self.background_node.set_property('color', Gegl.Color.new("#fff"))
 
         self.over = self.graph.create_child("gegl:over")
-        self.over_prev1 = self.graph.create_child("gegl:over")
+        self.over2 = self.graph.create_child("gegl:over")
         self.opacity_prev1 = self.graph.create_child("gegl:opacity")
         self.opacity_prev1.set_property('value', 0.5)
-        self.over_prev2 = self.graph.create_child("gegl:over")
+        self.over3 = self.graph.create_child("gegl:over")
         self.opacity_prev2 = self.graph.create_child("gegl:opacity")
         self.opacity_prev2.set_property('value', 0.5)
 
         self.background_node.connect_to("output", self.over, "input")
-        self.over_prev1.connect_to("output", self.over, "aux")
-        self.opacity_prev1.connect_to("output", self.over_prev1, "aux")
-        self.over_prev2.connect_to("output", self.opacity_prev1, "input")
-        self.opacity_prev2.connect_to("output", self.over_prev2, "aux")
+        self.over2.connect_to("output", self.over, "aux")
+        self.opacity_prev1.connect_to("output", self.over2, "aux")
+        self.over3.connect_to("output", self.opacity_prev1, "input")
+        self.opacity_prev2.connect_to("output", self.over3, "aux")
 
         self.update_graph()
 
     def update_graph(self):
-        self.surface_node.connect_to("output", self.over_prev1, "input")
+        self.surface_node.connect_to("output", self.over2, "input")
+
+        if not self.onionskin_on:
+            return
 
         prev_cel1 = self.timeline.get_cel(self.timeline.idx-1)
         if prev_cel1:
             prev_surface_node1 = prev_cel1.surface_node
-            prev_surface_node1.connect_to("output", self.over_prev2, "input")
+            prev_surface_node1.connect_to("output", self.over3, "input")
+        else:
+            self.over3.disconnect("input")
 
         prev_cel2 = self.timeline.get_cel(self.timeline.idx-2)
         if prev_cel2:
             prev_surface_node2 = prev_cel2.surface_node
             prev_surface_node2.connect_to("output", self.opacity_prev2, "input")
+        else:
+            self.opacity_prev2.disconnect("input")
 
         # debug
         # print_connections(self.over)
@@ -208,6 +217,16 @@ class FlipbookApp(object):
             GObject.source_remove(self.play_hid)
             self.play_hid = None
 
+    def toggle_onionskin(self):
+        self.onionskin_on = not self.onionskin_on
+
+        if self.onionskin_on:
+            self.opacity_prev1.connect_to("output", self.over2, "aux")
+        else:
+            self.over2.disconnect("aux")
+
+        self.update_graph()
+
     def key_release_cb(self, widget, event):
         if event.keyval == Gdk.KEY_Left:
             self.go_previous()
@@ -215,6 +234,8 @@ class FlipbookApp(object):
             self.go_next()
         elif event.keyval == Gdk.KEY_p:
             self.toggle_play_stop()
+        elif event.keyval == Gdk.KEY_o:
+            self.toggle_onionskin()
 
 if __name__ == '__main__':
     Gegl.init([])

@@ -78,6 +78,8 @@ class FlipbookApp(object):
         self.button_pressed = False
         self.last_event = (0.0, 0.0, 0.0) # (x, y, time)
 
+        self.onionskin_on = True
+
         self.surface = None
         self.surface_node = None
 
@@ -123,6 +125,9 @@ class FlipbookApp(object):
 
     def update_graph(self):
         self.surface_node.connect_to("output", self.over2, "input")
+
+        if not self.onionskin_on:
+            return
 
         prev_cel = self.timeline.get_cel(self.timeline.idx-1)
         if prev_cel:
@@ -222,6 +227,16 @@ class FlipbookApp(object):
             GObject.source_remove(self.play_hid)
             self.play_hid = None
 
+    def toggle_onionskin(self):
+        self.onionskin_on = not self.onionskin_on
+
+        if self.onionskin_on:
+            self.opacity.connect_to("output", self.over2, "aux")
+        else:
+            self.over2.disconnect("aux")
+
+        self.update_graph()
+
     def key_release_cb(self, widget, event):
         if event.keyval == Gdk.KEY_Left:
             self.go_previous()
@@ -229,6 +244,8 @@ class FlipbookApp(object):
             self.go_next()
         elif event.keyval == Gdk.KEY_p:
             self.toggle_play_stop()
+        elif event.keyval == Gdk.KEY_o:
+            self.toggle_onionskin()
 
 if __name__ == '__main__':
     Gegl.init([])
