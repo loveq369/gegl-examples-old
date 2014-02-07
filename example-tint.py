@@ -97,33 +97,46 @@ class FlipbookApp(object):
         self.background_node.set_property('color', Gegl.Color.new("#fff"))
 
         self.over = self.graph.create_child("gegl:over")
-        self.over_prev1 = self.graph.create_child("gegl:over")
-        self.opacity_prev1 = self.graph.create_child("gegl:opacity")
-        self.opacity_prev1.set_property('value', 0.5)
-        self.over_prev2 = self.graph.create_child("gegl:over")
-        self.opacity_prev2 = self.graph.create_child("gegl:opacity")
-        self.opacity_prev2.set_property('value', 0.5)
+        self.over2 = self.graph.create_child("gegl:over")
+        self.opacity = self.graph.create_child("gegl:opacity")
+        self.opacity.set_property('value', 0.5)
+        self.over3 = self.graph.create_child("gegl:over")
+        self.add_prev = self.graph.create_child("gegl:add")
+        self.add_next = self.graph.create_child("gegl:add")
+        self.color_prev = self.graph.create_child("gegl:rectangle")
+        self.color_prev.set_property('color', Gegl.Color.new("#f00"))
+        self.color_next = self.graph.create_child("gegl:rectangle")
+        self.color_next.set_property('color', Gegl.Color.new("#00f"))
 
         self.background_node.connect_to("output", self.over, "input")
-        self.over_prev1.connect_to("output", self.over, "aux")
-        self.opacity_prev1.connect_to("output", self.over_prev1, "aux")
-        self.over_prev2.connect_to("output", self.opacity_prev1, "input")
-        self.opacity_prev2.connect_to("output", self.over_prev2, "aux")
+        self.over2.connect_to("output", self.over, "aux")
+        self.opacity.connect_to("output", self.over2, "aux")
+        self.over3.connect_to("output", self.opacity, "input")
+
+        self.add_prev.connect_to("output", self.over3, "input")
+        self.add_next.connect_to("output", self.over3, "aux")
+
+        self.color_prev.connect_to("output", self.add_prev, "aux")
+        self.color_next.connect_to("output", self.add_next, "aux")
 
         self.update_graph()
 
     def update_graph(self):
-        self.surface_node.connect_to("output", self.over_prev1, "input")
+        self.surface_node.connect_to("output", self.over2, "input")
 
-        prev_cel1 = self.timeline.get_cel(self.timeline.idx-1)
-        if prev_cel1:
-            prev_surface_node1 = prev_cel1.surface_node
-            prev_surface_node1.connect_to("output", self.over_prev2, "input")
+        prev_cel = self.timeline.get_cel(self.timeline.idx-1)
+        if prev_cel:
+            prev_surface_node = prev_cel.surface_node
+            prev_surface_node.connect_to("output", self.add_prev, "input")
+        else:
+            self.add_prev.disconnect("input")
 
-        prev_cel2 = self.timeline.get_cel(self.timeline.idx-2)
-        if prev_cel2:
-            prev_surface_node2 = prev_cel2.surface_node
-            prev_surface_node2.connect_to("output", self.opacity_prev2, "input")
+        next_cel = self.timeline.get_cel(self.timeline.idx+1)
+        if next_cel:
+            next_surface_node = next_cel.surface_node
+            next_surface_node.connect_to("output", self.add_next, "input")
+        else:
+            self.add_next.disconnect("input")
 
         # debug
         # print_connections(self.over)
@@ -158,8 +171,9 @@ class FlipbookApp(object):
         Gtk.main_quit()
 
     def size_allocate_cb(self, widget, allocation):
-        self.background_node.set_property("width", allocation.width)
-        self.background_node.set_property("height", allocation.height)
+        for node in (self.background_node, self.color_prev, self.color_next):
+            node.set_property("width", allocation.width)
+            node.set_property("height", allocation.height)
 
     def motion_to_cb(self, widget, event):
         (x, y, time) = event.x, event.y, event.time
