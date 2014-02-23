@@ -1,0 +1,63 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<gegl>
+  <node operation='svg:src-over'>
+      <node operation='svg:src-over'>
+          <node operation='gegl:opacity'>
+              <params>
+                <param name='value'>0.5</param>
+              </params>
+          </node>
+          <node operation='svg:src-over'>
+              <node operation='gegl:add'>
+                  <params>
+                    <param name='value'>0</param>
+                  </params>
+                  <node operation='gegl:rectangle'>
+                      <params>
+                        <param name='x'>0</param>
+                        <param name='y'>0</param>
+                        <param name='width'>800</param>
+                        <param name='height'>400</param>
+                        <param name='color'>rgb(0.0000, 0.0000, 1.0000)</param>
+                      </params>
+                  </node>
+              </node>
+              <node operation='gegl:buffer-source'>
+                  <params>
+                  </params>
+              </node>
+          </node>
+          <node operation='gegl:add'>
+              <params>
+                <param name='value'>0</param>
+              </params>
+              <node operation='gegl:rectangle'>
+                  <params>
+                    <param name='x'>0</param>
+                    <param name='y'>0</param>
+                    <param name='width'>800</param>
+                    <param name='height'>400</param>
+                    <param name='color'>rgb(1.0000, 0.0000, 0.0000)</param>
+                  </params>
+              </node>
+          </node>
+          <node operation='gegl:buffer-source'>
+              <params>
+              </params>
+          </node>
+      </node>
+      <node operation='gegl:buffer-source'>
+          <params>
+          </params>
+      </node>
+  </node>
+  <node operation='gegl:rectangle'>
+      <params>
+        <param name='x'>0</param>
+        <param name='y'>0</param>
+        <param name='width'>800</param>
+        <param name='height'>400</param>
+        <param name='color'>rgb(1.0000, 1.0000, 1.0000)</param>
+      </params>
+  </node>
+</gegl>

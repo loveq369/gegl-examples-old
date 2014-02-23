@@ -1,0 +1,24 @@
+body {
+    margin: 0;
+}
+
+svg {
+    overflow: hidden;
+    background-color: #eee;
+}
+
+.node rect {
+    stroke: #333;
+    stroke-width: 3px;
+    fill: #fff;
+}
+
+.edgeLabel rect {
+    fill: #eee;
+}
+
+.edgePath path {
+    stroke: #333;
+    stroke-width: 2.5px;
+    fill: none;
+}
