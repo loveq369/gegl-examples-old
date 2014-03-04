@@ -5,7 +5,10 @@ import gi
 from gi.repository import Gegl, Gtk, Gdk, GObject
 from gi.repository import GeglGtk3 as GeglGtk
 
-from lib import tiledsurface, brush
+from lib import brush
+
+from xsheet import XSheet
+from xsheetwidget import XSheetWidget
 
 def print_connections(node):
     def print_node(node, i=0):
@@ -21,54 +24,7 @@ def print_connections(node):
     print("")
 
 
-class Cel(object):
-    def __init__(self):
-        self.surface = tiledsurface.GeglSurface()
-        self.surface_node = self.surface.get_node()
-
-
-class Timeline(object):
-    def __init__(self, length):
-        self.idx = 0
-        self.frames = []
-        for idx in range(length):
-            self.frames.append(Cel())
-
-    def go_previous(self, loop=False):
-        if not loop:
-            if self.idx == 0:
-                return False
-        else:
-            if self.idx == 0:
-                self.idx = len(self.frames)-1
-                return True
-
-        self.idx -= 1
-        return True
-
-    def go_next(self, loop=False):
-        if not loop:
-            if self.idx == len(self.frames)-1:
-                return False
-        else:
-            if self.idx == len(self.frames)-1:
-                self.idx = 0
-                return True
-
-        self.idx += 1
-        return True
-
-    def get_cel(self, idx=None):
-        if idx is None:
-            idx = self.idx
-
-        if idx < 0 or idx > len(self.frames)-1:
-            return False
-
-        return self.frames[idx]
-
-
-class FlipbookApp(object):
+class XSheetApp(object):
     def __init__(self):
         brush_file = open('brushes/classic/charcoal.myb')
         brush_info = brush.BrushInfo(brush_file.read())
@@ -85,7 +41,7 @@ class FlipbookApp(object):
 
         self.play_hid = None
 
-        self.timeline = Timeline(10)
+        self.xsheet = XSheet(10)
         self.update_surface()
 
         self.create_graph()
@@ -120,14 +76,14 @@ class FlipbookApp(object):
         if not self.onionskin_on:
             return
 
-        prev_cel1 = self.timeline.get_cel(self.timeline.idx-1)
+        prev_cel1 = self.xsheet.get_cel(self.xsheet.idx-1)
         if prev_cel1:
             prev_surface_node1 = prev_cel1.surface_node
             prev_surface_node1.connect_to("output", self.over3, "input")
         else:
             self.over3.disconnect("input")
 
-        prev_cel2 = self.timeline.get_cel(self.timeline.idx-2)
+        prev_cel2 = self.xsheet.get_cel(self.xsheet.idx-2)
         if prev_cel2:
             prev_surface_node2 = prev_cel2.surface_node
             prev_surface_node2.connect_to("output", self.opacity_prev2, "input")
@@ -145,7 +101,7 @@ class FlipbookApp(object):
         window.connect("key-release-event", self.key_release_cb)
         window.show()
 
-        top_box = Gtk.VBox()
+        top_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         window.add(top_box)
         top_box.show()
 
@@ -162,6 +118,10 @@ class FlipbookApp(object):
         view_widget.set_size_request(800, 400)
         event_box.add(view_widget)
         view_widget.show()
+
+        xsheet_widget = XSheetWidget(self.xsheet)
+        top_box.pack_start(xsheet_widget, expand=False, fill=False, padding=0)
+        xsheet_widget.show()
 
     def run(self):
         return Gtk.main()
@@ -193,12 +153,12 @@ class FlipbookApp(object):
         self.brush.reset()
 
     def update_surface(self):
-        cel = self.timeline.get_cel()
+        cel = self.xsheet.get_cel()
         self.surface = cel.surface
         self.surface_node = cel.surface_node
 
     def go_previous(self, loop=False):
-        changed = self.timeline.go_previous(loop)
+        changed = self.xsheet.go_previous(loop)
         if changed:
             self.update_surface()
             self.update_graph()
@@ -206,7 +166,7 @@ class FlipbookApp(object):
         return changed
 
     def go_next(self, loop=False):
-        changed = self.timeline.go_next(loop)
+        changed = self.xsheet.go_next(loop)
         if changed:
             self.update_surface()
             self.update_graph()
@@ -231,9 +191,9 @@ class FlipbookApp(object):
         self.update_graph()
 
     def key_release_cb(self, widget, event):
-        if event.keyval == Gdk.KEY_Left:
+        if event.keyval == Gdk.KEY_Up:
             self.go_previous()
-        elif event.keyval == Gdk.KEY_Right:
+        elif event.keyval == Gdk.KEY_Down:
             self.go_next()
         elif event.keyval == Gdk.KEY_p:
             self.toggle_play_stop()
@@ -244,5 +204,5 @@ if __name__ == '__main__':
     Gegl.init([])
     Gtk.init([])
 
-    app = FlipbookApp()
+    app = XSheetApp()
     app.run()

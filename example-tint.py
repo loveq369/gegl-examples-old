@@ -175,26 +175,29 @@ class FlipbookApp(object):
 
     def init_ui(self):
         window = Gtk.Window()
+        window.props.title = "Example Tint"
         window.connect("destroy", self.destroy_cb)
         window.connect("size-allocate", self.size_allocate_cb)
         window.connect("key-release-event", self.key_release_cb)
+        window.show()
 
         top_box = Gtk.VBox()
         window.add(top_box)
+        top_box.show()
 
         event_box = Gtk.EventBox()
         event_box.connect("motion-notify-event", self.motion_to_cb)
         event_box.connect("button-press-event", self.button_press_cb)
         event_box.connect("button-release-event", self.button_release_cb)
         top_box.pack_start(event_box, expand=True, fill=True, padding=0)
+        event_box.show()
 
         view_widget = GeglGtk.View()
         view_widget.set_node(self.over)
         view_widget.set_autoscale_policy(GeglGtk.ViewAutoscale.DISABLED)
         view_widget.set_size_request(800, 400)
         event_box.add(view_widget)
-
-        window.show_all()
+        view_widget.show()
 
     def run(self):
         return Gtk.main()
