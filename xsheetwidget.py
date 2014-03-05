@@ -17,9 +17,11 @@ def _get_cairo_color(gdk_color):
     return (float(gdk_color.red), float(gdk_color.green), float(gdk_color.blue))
 
 
-class XSheetWidget(Gtk.DrawingArea):
-    def __init__(self, xsheet):
+class _XSheetDrawing(Gtk.DrawingArea):
+    def __init__(self, xsheet, adjustment):
         Gtk.DrawingArea.__init__(self)
+
+        self.props.vexpand = True
 
         self._background_color = self.get_style_context().lookup_color('theme_bg_color')[1]
         self._selected_color = self.get_style_context().lookup_color('theme_selected_bg_color')[1]
@@ -28,6 +30,7 @@ class XSheetWidget(Gtk.DrawingArea):
 
         self._xsheet = xsheet
         self._pixbuf = None
+        self._offset = 0
         self._button_pressed = False
 
         self.add_events(Gdk.EventMask.POINTER_MOTION_MASK |
@@ -41,12 +44,14 @@ class XSheetWidget(Gtk.DrawingArea):
         self.connect("button-release-event", self.button_release_cb)
 
         self._xsheet.connect('changed', self.xsheet_changed_cb)
-        widget_width = NUMBERS_WIDTH + CEL_WIDTH * xsheet.layers_length
-        self.set_size_request(widget_width, 0)
+        adjustment.connect("value-changed", self.scroll_changed_cb)
+
+        widget_width = NUMBERS_WIDTH + CEL_WIDTH * self._xsheet.layers_length
+        self.set_size_request(widget_width, -1)
 
     def configure_event_cb(self, widget, event, data=None):
         width = widget.get_allocated_width()
-        height = widget.get_allocated_height()
+        height = max(widget.props.parent.get_allocated_height(), int(CEL_HEIGHT * len(self._xsheet.frames)))
 
         # Destroy previous buffer
         if self._pixbuf is not None:
@@ -59,6 +64,12 @@ class XSheetWidget(Gtk.DrawingArea):
         return False
 
     def xsheet_changed_cb(self, xsheet):
+        self.queue_draw()
+
+    def scroll_changed_cb(self, adjustment):
+        dy = self._pixbuf.get_height() - self.get_allocated_height()
+        dx = adjustment.props.upper - adjustment.props.page_size
+        self._offset = -adjustment.props.value * dy / dx
         self.queue_draw()
 
     def draw_cb(self, widget, context):
@@ -74,7 +85,7 @@ class XSheetWidget(Gtk.DrawingArea):
         self.draw_numbers(drawing_context)
         self.draw_elements(drawing_context)
 
-        context.set_source_surface(self._pixbuf, 0.0, 0.0)
+        context.set_source_surface(self._pixbuf, 0.0, self._offset)
         context.paint()
 
     def draw_background(self, context):
@@ -113,7 +124,7 @@ class XSheetWidget(Gtk.DrawingArea):
         context.set_line_width(SOFT_LINE_WIDTH)
 
         y1 = 0
-        y2 = 24 * CEL_HEIGHT
+        y2 = len(self._xsheet.frames) * CEL_HEIGHT
 
         context.move_to(NUMBERS_WIDTH, y1)
         context.line_to(NUMBERS_WIDTH, y2)
@@ -155,7 +166,7 @@ class XSheetWidget(Gtk.DrawingArea):
         context.fill()
 
     def _get_frame_from_point(self, x, y):
-        return int(y / CEL_HEIGHT)
+        return int((y - self._offset) / CEL_HEIGHT)
 
     def button_press_cb(self, widget, event):
         self._button_pressed = True
@@ -171,3 +182,21 @@ class XSheetWidget(Gtk.DrawingArea):
         idx = self._get_frame_from_point(event.x, event.y)
         if self._button_pressed:
             self._xsheet.go_to_frame(idx)
+
+class XSheetWidget(Gtk.Grid):
+    def __init__(self, xsheet):
+        Gtk.Grid.__init__(self)
+        self.props.orientation = Gtk.Orientation.HORIZONTAL
+
+        adjustment = Gtk.Adjustment()
+        adjustment.props.lower = 0
+        adjustment.props.upper = 1
+        adjustment.props.page_size = 0.1
+
+        drawing = _XSheetDrawing(xsheet, adjustment)
+        self.add(drawing)
+        drawing.show()
+
+        scrollbar = Gtk.VScrollbar(adjustment=adjustment)
+        self.add(scrollbar)
+        scrollbar.show()
