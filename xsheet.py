@@ -1,3 +1,5 @@
+from gi.repository import GObject
+
 from lib import tiledsurface
 
 class Cel(object):
@@ -6,8 +8,14 @@ class Cel(object):
         self.surface_node = self.surface.get_node()
 
 
-class XSheet(object):
+class XSheet(GObject.GObject):
+    __gsignals__ = {
+        "changed": (GObject.SignalFlags.RUN_FIRST, None, []),
+    }
+
     def __init__(self, length):
+        GObject.GObject.__init__(self)
+
         self.idx = 0
         self.frames = []
         for idx in range(length):
@@ -23,6 +31,8 @@ class XSheet(object):
                 return True
 
         self.idx -= 1
+
+        self.emit("changed")
         return True
 
     def go_next(self, loop=False):
@@ -35,6 +45,8 @@ class XSheet(object):
                 return True
 
         self.idx += 1
+
+        self.emit("changed")
         return True
 
     def get_cel(self, idx=None):

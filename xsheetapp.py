@@ -98,7 +98,7 @@ class XSheetApp(object):
         window.props.title = "Flipbook"
         window.connect("destroy", self.destroy_cb)
         window.connect("size-allocate", self.size_allocate_cb)
-        window.connect("key-release-event", self.key_release_cb)
+        window.connect("key-press-event", self.key_release_cb)
         window.show()
 
         top_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
