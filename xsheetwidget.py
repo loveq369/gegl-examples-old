@@ -2,6 +2,7 @@ import math
 import cairo
 
 from gi.repository import Gtk
+from gi.repository import Gdk
 
 CEL_WIDTH = 55
 CEL_HEIGHT = 25
@@ -24,9 +25,18 @@ class XSheetWidget(Gtk.DrawingArea):
 
         self._xsheet = xsheet
         self._pixbuf = None
+        self._button_pressed = False
+
+        self.add_events(Gdk.EventMask.POINTER_MOTION_MASK |
+            Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK |
+            Gdk.EventMask.SCROLL_MASK)
 
         self.connect('draw', self.draw_cb)
         self.connect('configure-event', self.configure_event_cb)
+        self.connect("motion-notify-event", self.motion_notify_cb)
+        self.connect("button-press-event", self.button_press_cb)
+        self.connect("button-release-event", self.button_release_cb)
+
         self._xsheet.connect('changed', self.xsheet_changed_cb)
         self.set_size_request(CEL_WIDTH * xsheet.layers_length, 0)
 
@@ -114,3 +124,18 @@ class XSheetWidget(Gtk.DrawingArea):
         context.set_source_rgb(*_get_cairo_color(self._fg_color))
         context.arc(CEL_WIDTH/2, CEL_HEIGHT/2, ELEMENT_CEL_RADIUS, 0, 2 * math.pi);
         context.fill()
+
+    def button_press_cb(self, widget, event):
+        self._button_pressed = True
+
+    def button_release_cb(self, widget, event):
+        self._button_pressed = False
+
+    def _get_frame_from_point(self, x, y):
+        return int(y / CEL_HEIGHT)
+
+    def motion_notify_cb(self, widget, event):
+        x, y = event.x, event.y
+        idx = self._get_frame_from_point(event.x, event.y)
+        if self._button_pressed:
+            self._xsheet.go_to_frame(idx)

@@ -21,6 +21,15 @@ class XSheet(GObject.GObject):
         for idx in range(length):
             self.frames.append(Cel())
 
+    def go_to_frame(self, idx):
+        if idx < 0 or idx > len(self.frames)-1:
+            return False
+
+        self.idx = idx
+
+        self.emit("changed")
+        return True
+
     def go_previous(self, loop=False):
         if not loop:
             if self.idx == 0:

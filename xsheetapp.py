@@ -24,8 +24,10 @@ def print_connections(node):
     print("")
 
 
-class XSheetApp(object):
+class XSheetApp(GObject.GObject):
     def __init__(self):
+        GObject.GObject.__init__(self)
+
         brush_file = open('brushes/classic/charcoal.myb')
         brush_info = brush.BrushInfo(brush_file.read())
         brush_info.set_color_rgb((0.0, 0.0, 0.0))
@@ -42,6 +44,8 @@ class XSheetApp(object):
         self.play_hid = None
 
         self.xsheet = XSheet(10)
+        self.xsheet.connect('changed', self.xsheet_changed_cb)
+
         self.update_surface()
 
         self.create_graph()
@@ -152,6 +156,10 @@ class XSheetApp(object):
         self.button_pressed = False
         self.brush.reset()
 
+    def xsheet_changed_cb(self, xsheet):
+        self.update_surface()
+        self.update_graph()
+
     def update_surface(self):
         cel = self.xsheet.get_cel()
         self.surface = cel.surface
@@ -159,18 +167,10 @@ class XSheetApp(object):
 
     def go_previous(self, loop=False):
         changed = self.xsheet.go_previous(loop)
-        if changed:
-            self.update_surface()
-            self.update_graph()
-
         return changed
 
     def go_next(self, loop=False):
         changed = self.xsheet.go_next(loop)
-        if changed:
-            self.update_surface()
-            self.update_graph()
-
         return changed
 
     def toggle_play_stop(self):
