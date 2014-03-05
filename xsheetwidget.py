@@ -4,12 +4,14 @@ import cairo
 from gi.repository import Gtk
 from gi.repository import Gdk
 
-CEL_WIDTH = 55
-CEL_HEIGHT = 25
+NUMBERS_WIDTH = 45.0
+NUMBERS_MARGIN = 5.0
+CEL_WIDTH = 55.0
+CEL_HEIGHT = 25.0
 
 SOFT_LINE_WIDTH = 0.2
 STRONG_LINE_WIDTH = 0.5
-ELEMENT_CEL_RADIUS = 3
+ELEMENT_CEL_RADIUS = 3.0
 
 def _get_cairo_color(gdk_color):
     return (float(gdk_color.red), float(gdk_color.green), float(gdk_color.blue))
@@ -22,6 +24,7 @@ class XSheetWidget(Gtk.DrawingArea):
         self._background_color = self.get_style_context().lookup_color('theme_bg_color')[1]
         self._selected_color = self.get_style_context().lookup_color('theme_selected_bg_color')[1]
         self._fg_color = self.get_style_context().lookup_color('theme_fg_color')[1]
+        self._selected_fg_color = self.get_style_context().lookup_color('theme_selected_fg_color')[1]
 
         self._xsheet = xsheet
         self._pixbuf = None
@@ -38,7 +41,8 @@ class XSheetWidget(Gtk.DrawingArea):
         self.connect("button-release-event", self.button_release_cb)
 
         self._xsheet.connect('changed', self.xsheet_changed_cb)
-        self.set_size_request(CEL_WIDTH * xsheet.layers_length, 0)
+        widget_width = NUMBERS_WIDTH + CEL_WIDTH * xsheet.layers_length
+        self.set_size_request(widget_width, 0)
 
     def configure_event_cb(self, widget, event, data=None):
         width = widget.get_allocated_width()
@@ -67,6 +71,7 @@ class XSheetWidget(Gtk.DrawingArea):
         self.draw_background(drawing_context)
         self.draw_selected_row(drawing_context)
         self.draw_grid(drawing_context)
+        self.draw_numbers(drawing_context)
         self.draw_elements(drawing_context)
 
         context.set_source_surface(self._pixbuf, 0.0, 0.0)
@@ -83,15 +88,14 @@ class XSheetWidget(Gtk.DrawingArea):
         for i in range(len(self._xsheet.frames)):
             if i == self._xsheet.idx:
                 y = i * CEL_HEIGHT
-                width = CEL_WIDTH * self._xsheet.layers_length
+                width = context.get_target().get_width()
                 context.set_source_rgb(*_get_cairo_color(self._selected_color))
                 context.rectangle(0, y, width, CEL_HEIGHT)
                 context.fill()
                 break
 
     def draw_grid_horizontal(self, context):
-        x1 = 0
-        x2 = CEL_WIDTH * self._xsheet.layers_length
+        width = context.get_target().get_width()
         context.set_source_rgb(*_get_cairo_color(self._fg_color))
         for i in range(len(self._xsheet.frames) + 1):
             if i % self._xsheet.frames_separation:
@@ -100,8 +104,8 @@ class XSheetWidget(Gtk.DrawingArea):
                 context.set_line_width(STRONG_LINE_WIDTH)
 
             y = i * CEL_HEIGHT
-            context.move_to(x1, y)
-            context.line_to(x2, y)
+            context.move_to(0, y)
+            context.line_to(width, y)
             context.stroke()
 
     def draw_grid_vertical(self, context):
@@ -110,8 +114,12 @@ class XSheetWidget(Gtk.DrawingArea):
 
         y1 = 0
         y2 = 24 * CEL_HEIGHT
+
+        context.move_to(NUMBERS_WIDTH, y1)
+        context.line_to(NUMBERS_WIDTH, y2)
+
         for i in range(self._xsheet.layers_length):
-            x = i * CEL_WIDTH
+            x = NUMBERS_WIDTH + i * CEL_WIDTH
             context.move_to(x, y1)
             context.line_to(x, y2)
         context.stroke()
@@ -120,10 +128,34 @@ class XSheetWidget(Gtk.DrawingArea):
         self.draw_grid_vertical(context)
         self.draw_grid_horizontal(context)
 
+    def draw_numbers(self, context):
+        context.select_font_face("sans-serif",
+                                 cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+        context.set_font_size(13)
+
+        for i in range(len(self._xsheet.frames)):
+            if i == self._xsheet.idx:
+                context.set_source_rgb(*_get_cairo_color(self._selected_fg_color))
+            else:
+                context.set_source_rgb(*_get_cairo_color(self._fg_color))
+
+            text = str(i+1).zfill(3)
+            x, y, width, height, dx, dy = context.text_extents(text)
+            context.move_to(NUMBERS_WIDTH - width - NUMBERS_MARGIN, (i * CEL_HEIGHT) + CEL_HEIGHT/2 + height/2)
+            context.show_text(text)
+
     def draw_elements(self, context):
-        context.set_source_rgb(*_get_cairo_color(self._fg_color))
-        context.arc(CEL_WIDTH/2, CEL_HEIGHT/2, ELEMENT_CEL_RADIUS, 0, 2 * math.pi);
+        i = 0
+        if i == self._xsheet.idx:
+            context.set_source_rgb(*_get_cairo_color(self._selected_fg_color))
+        else:
+            context.set_source_rgb(*_get_cairo_color(self._fg_color))
+
+        context.arc(NUMBERS_WIDTH + CEL_WIDTH/2, CEL_HEIGHT/2, ELEMENT_CEL_RADIUS, 0, 2 * math.pi);
         context.fill()
+
+    def _get_frame_from_point(self, x, y):
+        return int(y / CEL_HEIGHT)
 
     def button_press_cb(self, widget, event):
         self._button_pressed = True
@@ -131,8 +163,8 @@ class XSheetWidget(Gtk.DrawingArea):
     def button_release_cb(self, widget, event):
         self._button_pressed = False
 
-    def _get_frame_from_point(self, x, y):
-        return int(y / CEL_HEIGHT)
+        idx = self._get_frame_from_point(event.x, event.y)
+        self._xsheet.go_to_frame(idx)
 
     def motion_notify_cb(self, widget, event):
         x, y = event.x, event.y
