@@ -3,6 +3,7 @@ import sys, os.path
 
 import gi
 from gi.repository import Gegl, Gtk, Gdk, GObject
+from gi.repository import GdkPixbuf
 from gi.repository import GeglGtk3 as GeglGtk
 
 from lib import brush
@@ -109,15 +110,40 @@ class XSheetApp(GObject.GObject):
         window.connect("key-release-event", self.key_release_cb)
         window.show()
 
-        top_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        top_box = Gtk.Grid()
         window.add(top_box)
         top_box.show()
+
+        toolbar = Gtk.Toolbar()
+        top_box.attach(toolbar, 0, 0, 2, 1)
+        toolbar.show()
+
+        factory = Gtk.IconFactory()
+        for icon_name in ['xsheet-onionskin', 'xsheet-play']:
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file(os.path.join('icons', icon_name + '.svg'))
+            iconset = Gtk.IconSet.new_from_pixbuf(pixbuf)
+            factory.add(icon_name, iconset)
+            factory.add_default()
+
+        play_button = Gtk.ToggleToolButton()
+        play_button.set_stock_id("xsheet-play")
+        play_button.connect("toggled", self.toggle_play_cb)
+        toolbar.insert(play_button, -1)
+        play_button.show()
+
+        onionskin_button = Gtk.ToggleToolButton()
+        onionskin_button.set_stock_id("xsheet-onionskin")
+        onionskin_button.set_active(True)
+        onionskin_button.connect("toggled", self.toggle_onionskin_cb)
+        toolbar.insert(onionskin_button, -1)
+        onionskin_button.show()
 
         event_box = Gtk.EventBox()
         event_box.connect("motion-notify-event", self.motion_to_cb)
         event_box.connect("button-press-event", self.button_press_cb)
         event_box.connect("button-release-event", self.button_release_cb)
-        top_box.pack_start(event_box, expand=True, fill=True, padding=0)
+        top_box.attach(event_box, 0, 1, 1, 1)
+        event_box.props.expand = True
         event_box.show()
 
         view_widget = GeglGtk.View()
@@ -128,7 +154,7 @@ class XSheetApp(GObject.GObject):
         view_widget.show()
 
         xsheet_widget = XSheetWidget(self.xsheet)
-        top_box.pack_start(xsheet_widget, expand=False, fill=False, padding=0)
+        top_box.attach(xsheet_widget, 1, 1, 1, 1)
         xsheet_widget.show()
 
     def run(self):
@@ -184,6 +210,9 @@ class XSheetApp(GObject.GObject):
             GObject.source_remove(self.play_hid)
             self.play_hid = None
 
+    def toggle_play_cb(self, widget):
+        self.toggle_play_stop()
+
     def toggle_onionskin(self):
         self.onionskin_on = not self.onionskin_on
 
@@ -193,6 +222,9 @@ class XSheetApp(GObject.GObject):
             self.over2.disconnect("aux")
 
         self.update_graph()
+
+    def toggle_onionskin_cb(self, widget):
+        self.toggle_onionskin()
 
     def toggle_eraser(self):
         self.eraser_on = not self.eraser_on
