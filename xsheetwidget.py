@@ -30,6 +30,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
         self._selected_fg_color = self.get_style_context().lookup_color('theme_selected_fg_color')[1]
 
         self._xsheet = xsheet
+        self._adjustment = adjustment
         self._pixbuf = None
         self._offset = 0
         self._button_pressed = False
@@ -43,9 +44,10 @@ class _XSheetDrawing(Gtk.DrawingArea):
         self.connect("motion-notify-event", self.motion_notify_cb)
         self.connect("button-press-event", self.button_press_cb)
         self.connect("button-release-event", self.button_release_cb)
+        self.connect("scroll-event", self.scroll_cb)
 
         self._xsheet.connect('changed', self.xsheet_changed_cb)
-        adjustment.connect("value-changed", self.scroll_changed_cb)
+        self._adjustment.connect("value-changed", self.scroll_changed_cb)
 
         widget_width = NUMBERS_WIDTH + CEL_WIDTH * self._xsheet.layers_length
         self.set_size_request(widget_width, -1)
@@ -54,13 +56,13 @@ class _XSheetDrawing(Gtk.DrawingArea):
         width = widget.get_allocated_width()
         height = max(widget.props.parent.get_allocated_height(), int(CEL_HEIGHT * len(self._xsheet.frames)))
 
-        # Destroy previous buffer
         if self._pixbuf is not None:
             self._pixbuf.finish()
             self._pixbuf = None
 
-        # Create a new buffer
         self._pixbuf = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+
+        self._adjustment.props.page_size = CEL_HEIGHT / height
 
         return False
 
@@ -185,6 +187,12 @@ class _XSheetDrawing(Gtk.DrawingArea):
         idx = self._get_frame_from_point(event.x, event.y)
         if self._button_pressed:
             self._xsheet.go_to_frame(idx)
+
+    def scroll_cb(self, widget, event):
+        if event.direction == Gdk.ScrollDirection.UP:
+            self._adjustment.props.value -= self._adjustment.props.page_size
+        elif event.direction == Gdk.ScrollDirection.DOWN:
+            self._adjustment.props.value += self._adjustment.props.page_size
 
 class XSheetWidget(Gtk.Grid):
     def __init__(self, xsheet):
