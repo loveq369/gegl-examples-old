@@ -119,7 +119,7 @@ class XSheetApp(GObject.GObject):
         toolbar.show()
 
         factory = Gtk.IconFactory()
-        for icon_name in ['xsheet-onionskin', 'xsheet-play']:
+        for icon_name in ['xsheet-onionskin', 'xsheet-play', 'xsheet-eraser']:
             pixbuf = GdkPixbuf.Pixbuf.new_from_file(os.path.join('icons', icon_name + '.svg'))
             iconset = Gtk.IconSet.new_from_pixbuf(pixbuf)
             factory.add(icon_name, iconset)
@@ -137,6 +137,12 @@ class XSheetApp(GObject.GObject):
         onionskin_button.connect("toggled", self.toggle_onionskin_cb)
         toolbar.insert(onionskin_button, -1)
         onionskin_button.show()
+
+        eraser_button = Gtk.ToggleToolButton()
+        eraser_button.set_stock_id("xsheet-eraser")
+        eraser_button.connect("toggled", self.toggle_eraser_cb)
+        toolbar.insert(eraser_button, -1)
+        eraser_button.show()
 
         event_box = Gtk.EventBox()
         event_box.connect("motion-notify-event", self.motion_to_cb)
@@ -237,6 +243,9 @@ class XSheetApp(GObject.GObject):
             self.brush.brushinfo.set_base_value("eraser", self.default_eraser)
             self.brush.brushinfo.set_base_value("radius_logarithmic",
                                                 self.default_radius)
+
+    def toggle_eraser_cb(self, widget):
+        self.toggle_eraser()
 
     def key_press_cb(self, widget, event):
         if event.keyval == Gdk.KEY_Up:
