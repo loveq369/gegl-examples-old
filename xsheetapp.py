@@ -103,7 +103,7 @@ class XSheetApp(GObject.GObject):
 
     def init_ui(self):
         window = Gtk.Window()
-        window.props.title = "Flipbook"
+        window.props.title = "XSheet"
         window.connect("destroy", self.destroy_cb)
         window.connect("size-allocate", self.size_allocate_cb)
         window.connect("key-press-event", self.key_press_cb)
