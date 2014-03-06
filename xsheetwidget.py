@@ -120,15 +120,19 @@ class _XSheetDrawing(Gtk.DrawingArea):
                 break
 
     def draw_grid_horizontal(self, context):
+        line_factor = 1
+        if  self._zoom_factor < 0.2:
+            line_factor = 0.5
+
         width = context.get_target().get_width()
         context.set_source_rgb(*_get_cairo_color(self._fg_color))
         for i in range(len(self._xsheet.frames) + 1):
             if i % 24 == 0:
                 context.set_line_width(SECONDS_LINE_WIDTH)
             elif i % self._xsheet.frames_separation:
-                context.set_line_width(SOFT_LINE_WIDTH)
+                context.set_line_width(SOFT_LINE_WIDTH * line_factor)
             else:
-                context.set_line_width(STRONG_LINE_WIDTH)
+                context.set_line_width(STRONG_LINE_WIDTH * line_factor)
 
             y = i * CEL_HEIGHT * self._zoom_factor
             context.move_to(0, y)
@@ -160,7 +164,16 @@ class _XSheetDrawing(Gtk.DrawingArea):
                                  cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
         context.set_font_size(13)
 
+        draw_step = 1
+        if  self._zoom_factor < 0.2:
+            draw_step = 4
+        elif self._zoom_factor < 0.6:
+            draw_step = 2
+
         for i in range(len(self._xsheet.frames)):
+            if i % draw_step != 0:
+                continue
+
             if i == self._xsheet.idx:
                 context.set_source_rgb(*_get_cairo_color(self._selected_fg_color))
             else:
