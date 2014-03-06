@@ -9,6 +9,10 @@ NUMBERS_MARGIN = 5.0
 CEL_WIDTH = 55.0
 CEL_HEIGHT = 25.0
 
+MIN_ZOOM = 0.1
+MAX_ZOOM = 4.0
+ZOOM_STEP = 0.05
+
 SOFT_LINE_WIDTH = 0.2
 STRONG_LINE_WIDTH = 0.5
 SECONDS_LINE_WIDTH = 1.0
@@ -33,6 +37,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
         self._adjustment = adjustment
         self._pixbuf = None
         self._offset = 0
+        self._zoom_factor = 1.0
         self._button_pressed = False
 
         self.add_events(Gdk.EventMask.POINTER_MOTION_MASK |
@@ -52,9 +57,10 @@ class _XSheetDrawing(Gtk.DrawingArea):
         widget_width = NUMBERS_WIDTH + CEL_WIDTH * self._xsheet.layers_length
         self.set_size_request(widget_width, -1)
 
-    def configure_event_cb(self, widget, event, data=None):
-        width = widget.get_allocated_width()
-        height = max(widget.props.parent.get_allocated_height(), int(CEL_HEIGHT * len(self._xsheet.frames)))
+    def configure(self):
+        width = self.get_allocated_width()
+        height = max(self.props.parent.get_allocated_height(),
+                     int(CEL_HEIGHT * self._zoom_factor * len(self._xsheet.frames)))
 
         if self._pixbuf is not None:
             self._pixbuf.finish()
@@ -62,17 +68,22 @@ class _XSheetDrawing(Gtk.DrawingArea):
 
         self._pixbuf = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
 
-        self._adjustment.props.page_size = CEL_HEIGHT / height
+        self._adjustment.props.page_size = CEL_HEIGHT * self._zoom_factor / height
 
+    def configure_event_cb(self, widget, event, data=None):
+        self.configure()
         return False
 
     def xsheet_changed_cb(self, xsheet):
         self.queue_draw()
 
-    def scroll_changed_cb(self, adjustment):
+    def update_offset(self):
         dy = self._pixbuf.get_height() - self.get_allocated_height()
-        dx = adjustment.props.upper - adjustment.props.page_size
-        self._offset = -adjustment.props.value * dy / dx
+        dx = self._adjustment.props.upper - self._adjustment.props.page_size
+        self._offset = -1 * self._adjustment.props.value * dy / dx
+
+    def scroll_changed_cb(self, adjustment):
+        self.update_offset()
         self.queue_draw()
 
     def draw_cb(self, widget, context):
@@ -101,10 +112,10 @@ class _XSheetDrawing(Gtk.DrawingArea):
     def draw_selected_row(self, context):
         for i in range(len(self._xsheet.frames)):
             if i == self._xsheet.idx:
-                y = i * CEL_HEIGHT
+                y = i * CEL_HEIGHT * self._zoom_factor
                 width = context.get_target().get_width()
                 context.set_source_rgb(*_get_cairo_color(self._selected_color))
-                context.rectangle(0, y, width, CEL_HEIGHT)
+                context.rectangle(0, y, width, CEL_HEIGHT * self._zoom_factor)
                 context.fill()
                 break
 
@@ -119,7 +130,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
             else:
                 context.set_line_width(STRONG_LINE_WIDTH)
 
-            y = i * CEL_HEIGHT
+            y = i * CEL_HEIGHT * self._zoom_factor
             context.move_to(0, y)
             context.line_to(width, y)
             context.stroke()
@@ -129,7 +140,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
         context.set_line_width(SOFT_LINE_WIDTH)
 
         y1 = 0
-        y2 = len(self._xsheet.frames) * CEL_HEIGHT
+        y2 = len(self._xsheet.frames) * CEL_HEIGHT * self._zoom_factor
 
         context.move_to(NUMBERS_WIDTH, y1)
         context.line_to(NUMBERS_WIDTH, y2)
@@ -157,7 +168,8 @@ class _XSheetDrawing(Gtk.DrawingArea):
 
             text = str(i+1).zfill(3)
             x, y, width, height, dx, dy = context.text_extents(text)
-            context.move_to(NUMBERS_WIDTH - width - NUMBERS_MARGIN, (i * CEL_HEIGHT) + CEL_HEIGHT/2 + height/2)
+            context.move_to(NUMBERS_WIDTH - width - NUMBERS_MARGIN,
+                            (i * CEL_HEIGHT * self._zoom_factor) + CEL_HEIGHT * self._zoom_factor /2 + height/2)
             context.show_text(text)
 
     def draw_elements(self, context):
@@ -167,11 +179,11 @@ class _XSheetDrawing(Gtk.DrawingArea):
         else:
             context.set_source_rgb(*_get_cairo_color(self._fg_color))
 
-        context.arc(NUMBERS_WIDTH + CEL_WIDTH/2, CEL_HEIGHT/2, ELEMENT_CEL_RADIUS, 0, 2 * math.pi);
+        context.arc(NUMBERS_WIDTH + CEL_WIDTH/2, CEL_HEIGHT * self._zoom_factor /2, ELEMENT_CEL_RADIUS, 0, 2 * math.pi);
         context.fill()
 
     def _get_frame_from_point(self, x, y):
-        return int((y - self._offset) / CEL_HEIGHT)
+        return int((y - self._offset) / CEL_HEIGHT / self._zoom_factor)
 
     def button_press_cb(self, widget, event):
         self._button_pressed = True
@@ -188,11 +200,30 @@ class _XSheetDrawing(Gtk.DrawingArea):
         if self._button_pressed:
             self._xsheet.go_to_frame(idx)
 
+    def zoom(self, direction):
+        new_zoom = self._zoom_factor + ZOOM_STEP * direction
+        if new_zoom < MIN_ZOOM or new_zoom > MAX_ZOOM:
+            return False
+
+        self._zoom_factor = new_zoom
+        self.configure()
+        self.update_offset()
+        self.queue_draw()
+
+        return True
+
     def scroll_cb(self, widget, event):
-        if event.direction == Gdk.ScrollDirection.UP:
-            self._adjustment.props.value -= self._adjustment.props.page_size
-        elif event.direction == Gdk.ScrollDirection.DOWN:
-            self._adjustment.props.value += self._adjustment.props.page_size
+        if event.state & Gdk.ModifierType.CONTROL_MASK:
+            if event.direction == Gdk.ScrollDirection.UP:
+                self.zoom(1)
+            elif event.direction == Gdk.ScrollDirection.DOWN:
+                self.zoom(-1)
+
+        else:
+            if event.direction == Gdk.ScrollDirection.UP:
+                self._adjustment.props.value -= self._adjustment.props.page_size
+            elif event.direction == Gdk.ScrollDirection.DOWN:
+                self._adjustment.props.value += self._adjustment.props.page_size
 
 class XSheetWidget(Gtk.Grid):
     def __init__(self, xsheet):
