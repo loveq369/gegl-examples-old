@@ -68,7 +68,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
 
         self._pixbuf = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
 
-        self._adjustment.props.page_size = CEL_HEIGHT * self._zoom_factor / height
+        self._adjustment.props.page_size = CEL_HEIGHT / height
 
     def configure_event_cb(self, widget, event, data=None):
         self.configure()

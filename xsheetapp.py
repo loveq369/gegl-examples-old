@@ -47,7 +47,7 @@ class XSheetApp(GObject.GObject):
 
         self.play_hid = None
 
-        self.xsheet = XSheet(24 * 4)
+        self.xsheet = XSheet(24 * 30)
         self.xsheet.connect('changed', self.xsheet_changed_cb)
 
         self.update_surface()
