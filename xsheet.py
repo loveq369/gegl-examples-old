@@ -22,7 +22,7 @@ class XSheet(GObject.GObject):
             self.frames.append(Cel())
 
     def go_to_frame(self, idx):
-        if idx < 0 or idx > len(self.frames)-1:
+        if idx < 0 or idx > len(self.frames)-1 or idx == self.idx:
             return False
 
         self.idx = idx
