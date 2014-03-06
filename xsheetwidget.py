@@ -11,6 +11,7 @@ CEL_HEIGHT = 25.0
 
 SOFT_LINE_WIDTH = 0.2
 STRONG_LINE_WIDTH = 0.5
+SECONDS_LINE_WIDTH = 1.0
 ELEMENT_CEL_RADIUS = 3.0
 
 def _get_cairo_color(gdk_color):
@@ -109,7 +110,9 @@ class _XSheetDrawing(Gtk.DrawingArea):
         width = context.get_target().get_width()
         context.set_source_rgb(*_get_cairo_color(self._fg_color))
         for i in range(len(self._xsheet.frames) + 1):
-            if i % self._xsheet.frames_separation:
+            if i % 24 == 0:
+                context.set_line_width(SECONDS_LINE_WIDTH)
+            elif i % self._xsheet.frames_separation:
                 context.set_line_width(SOFT_LINE_WIDTH)
             else:
                 context.set_line_width(STRONG_LINE_WIDTH)
