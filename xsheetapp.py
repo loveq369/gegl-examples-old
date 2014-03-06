@@ -10,6 +10,7 @@ from lib import brush
 
 from xsheet import XSheet
 from xsheetwidget import XSheetWidget
+from metronome import Metronome
 
 def print_connections(node):
     def print_node(node, i=0):
@@ -49,6 +50,8 @@ class XSheetApp(GObject.GObject):
 
         self.xsheet = XSheet(24 * 30)
         self.xsheet.connect('changed', self.xsheet_changed_cb)
+
+        self.metronome = Metronome(self.xsheet)
 
         self.update_surface()
 
@@ -120,7 +123,7 @@ class XSheetApp(GObject.GObject):
 
         factory = Gtk.IconFactory()
         for icon_name in ['xsheet-onionskin', 'xsheet-play', 'xsheet-eraser']:
-            pixbuf = GdkPixbuf.Pixbuf.new_from_file(os.path.join('icons', icon_name + '.svg'))
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file(os.path.join('data', 'icons', icon_name + '.svg'))
             iconset = Gtk.IconSet.new_from_pixbuf(pixbuf)
             factory.add(icon_name, iconset)
             factory.add_default()
@@ -207,6 +210,7 @@ class XSheetApp(GObject.GObject):
 
     def go_next(self, loop=False):
         changed = self.xsheet.go_next(loop)
+#        self.metronome.tick()
         return changed
 
     def toggle_play_stop(self):
