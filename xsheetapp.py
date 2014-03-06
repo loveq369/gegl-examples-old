@@ -31,11 +31,14 @@ class XSheetApp(GObject.GObject):
         brush_file = open('brushes/classic/charcoal.myb')
         brush_info = brush.BrushInfo(brush_file.read())
         brush_info.set_color_rgb((0.0, 0.0, 0.0))
+        self.default_eraser = brush_info.get_base_value("eraser")
+        self.default_radius = brush_info.get_base_value("radius_logarithmic")
         self.brush = brush.Brush(brush_info)
 
         self.button_pressed = False
         self.last_event = (0.0, 0.0, 0.0) # (x, y, time)
 
+        self.eraser_on = False
         self.onionskin_on = True
 
         self.surface = None
@@ -191,6 +194,18 @@ class XSheetApp(GObject.GObject):
 
         self.update_graph()
 
+    def toggle_eraser(self):
+        self.eraser_on = not self.eraser_on
+
+        if self.eraser_on:
+            self.brush.brushinfo.set_base_value("eraser", 1.0)
+            self.brush.brushinfo.set_base_value("radius_logarithmic",
+                                                self.default_radius * 3)
+        else:
+            self.brush.brushinfo.set_base_value("eraser", self.default_eraser)
+            self.brush.brushinfo.set_base_value("radius_logarithmic",
+                                                self.default_radius)
+
     def key_press_cb(self, widget, event):
         if event.keyval == Gdk.KEY_Up:
             self.go_previous()
@@ -202,6 +217,8 @@ class XSheetApp(GObject.GObject):
             self.toggle_play_stop()
         elif event.keyval == Gdk.KEY_o:
             self.toggle_onionskin()
+        elif event.keyval == Gdk.KEY_e:
+            self.toggle_eraser()
         elif event.keyval == Gdk.KEY_BackSpace:
             # FIXME, needs to be done in gegl backend
             self.surface.clear()
