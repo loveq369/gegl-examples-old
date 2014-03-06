@@ -102,7 +102,8 @@ class XSheetApp(GObject.GObject):
         window.props.title = "Flipbook"
         window.connect("destroy", self.destroy_cb)
         window.connect("size-allocate", self.size_allocate_cb)
-        window.connect("key-press-event", self.key_release_cb)
+        window.connect("key-press-event", self.key_press_cb)
+        window.connect("key-release-event", self.key_release_cb)
         window.show()
 
         top_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -190,15 +191,20 @@ class XSheetApp(GObject.GObject):
 
         self.update_graph()
 
-    def key_release_cb(self, widget, event):
+    def key_press_cb(self, widget, event):
         if event.keyval == Gdk.KEY_Up:
             self.go_previous()
         elif event.keyval == Gdk.KEY_Down:
             self.go_next()
-        elif event.keyval == Gdk.KEY_p:
+
+    def key_release_cb(self, widget, event):
+        if event.keyval == Gdk.KEY_p:
             self.toggle_play_stop()
         elif event.keyval == Gdk.KEY_o:
             self.toggle_onionskin()
+        elif event.keyval == Gdk.KEY_BackSpace:
+            # FIXME, needs to be done in gegl backend
+            self.surface.clear()
 
 if __name__ == '__main__':
     Gegl.init([])
