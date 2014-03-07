@@ -60,7 +60,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
     def configure(self):
         width = self.get_allocated_width()
         height = max(self.props.parent.get_allocated_height(),
-                     int(CEL_HEIGHT * self._zoom_factor * len(self._xsheet.frames)))
+                     int(CEL_HEIGHT * self._zoom_factor * self._xsheet.frames_length))
 
         if self._pixbuf is not None:
             self._pixbuf.finish()
@@ -110,7 +110,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
         context.fill()
 
     def draw_selected_row(self, context):
-        for i in range(len(self._xsheet.frames)):
+        for i in range(self._xsheet.frames_length):
             if i == self._xsheet.idx:
                 y = i * CEL_HEIGHT * self._zoom_factor
                 width = context.get_target().get_width()
@@ -126,7 +126,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
 
         width = context.get_target().get_width()
         context.set_source_rgb(*_get_cairo_color(self._fg_color))
-        for i in range(len(self._xsheet.frames) + 1):
+        for i in range(self._xsheet.frames_length + 1):
             if i % 24 == 0:
                 context.set_line_width(SECONDS_LINE_WIDTH)
             elif i % self._xsheet.frames_separation:
@@ -144,7 +144,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
         context.set_line_width(SOFT_LINE_WIDTH)
 
         y1 = 0
-        y2 = len(self._xsheet.frames) * CEL_HEIGHT * self._zoom_factor
+        y2 = self._xsheet.frames_length * CEL_HEIGHT * self._zoom_factor
 
         context.move_to(NUMBERS_WIDTH, y1)
         context.line_to(NUMBERS_WIDTH, y2)
@@ -170,7 +170,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
         elif self._zoom_factor < 0.6:
             draw_step = 2
 
-        for i in range(len(self._xsheet.frames)):
+        for i in range(self._xsheet.frames_length):
             if i % draw_step != 0:
                 continue
 

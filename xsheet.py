@@ -13,16 +13,17 @@ class XSheet(GObject.GObject):
         "changed": (GObject.SignalFlags.RUN_FIRST, None, []),
     }
 
-    def __init__(self, length):
+    def __init__(self, frames_length=24, layers_length=3):
         GObject.GObject.__init__(self)
 
         self.idx = 0
-        self.frames = []
-        for idx in range(length):
-            self.frames.append(Cel())
+        self.layer_idx = 0
+        self.frames = [[] for x in range(layers_length)]
+        for idx in range(frames_length):
+            self.frames[0].append(Cel())
 
     def go_to_frame(self, idx):
-        if idx < 0 or idx > len(self.frames)-1 or idx == self.idx:
+        if idx < 0 or idx > self.frames_length-1 or idx == self.idx:
             return False
 
         self.idx = idx
@@ -36,7 +37,7 @@ class XSheet(GObject.GObject):
                 return False
         else:
             if self.idx == 0:
-                self.idx = len(self.frames)-1
+                self.idx = self.frames_length-1
                 return True
 
         self.idx -= 1
@@ -46,10 +47,10 @@ class XSheet(GObject.GObject):
 
     def go_next(self, loop=False):
         if not loop:
-            if self.idx == len(self.frames)-1:
+            if self.idx == -1:
                 return False
         else:
-            if self.idx == len(self.frames)-1:
+            if self.idx == self.frames_length-1:
                 self.idx = 0
                 return True
 
@@ -62,14 +63,18 @@ class XSheet(GObject.GObject):
         if idx is None:
             idx = self.idx
 
-        if idx < 0 or idx > len(self.frames)-1:
+        if idx < 0 or idx > self.frames_length-1:
             return False
 
-        return self.frames[idx]
+        return self.frames[self.layer_idx][idx]
+
+    @property
+    def frames_length(self):
+        return len(self.frames[0])
 
     @property
     def layers_length(self):
-        return 3
+        return len(self.frames)
 
     @property
     def frames_separation(self):
