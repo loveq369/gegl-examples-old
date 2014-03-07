@@ -53,7 +53,8 @@ class _XSheetDrawing(Gtk.DrawingArea):
         self.connect("button-release-event", self.button_release_cb)
         self.connect("scroll-event", self.scroll_cb)
 
-        self._xsheet.connect('changed', self.xsheet_changed_cb)
+        self._xsheet.connect('frame-changed', self.xsheet_changed_cb)
+        self._xsheet.connect('layer-changed', self.xsheet_changed_cb)
         self._adjustment.connect("value-changed", self.scroll_changed_cb)
 
         widget_width = NUMBERS_WIDTH + CEL_WIDTH * self._xsheet.layers_length

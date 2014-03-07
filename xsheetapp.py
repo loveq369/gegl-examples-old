@@ -49,7 +49,8 @@ class XSheetApp(GObject.GObject):
         self.play_hid = None
 
         self.xsheet = XSheet(24 * 30)
-        self.xsheet.connect('changed', self.xsheet_changed_cb)
+        self.xsheet.connect('frame-changed', self.xsheet_changed_cb)
+        self.xsheet.connect('layer-changed', self.xsheet_changed_cb)
 
         self.metronome = Metronome(self.xsheet)
 
@@ -204,18 +205,9 @@ class XSheetApp(GObject.GObject):
         self.surface = cel.surface
         self.surface_node = cel.surface_node
 
-    def go_previous(self, loop=False):
-        changed = self.xsheet.go_previous(loop)
-        return changed
-
-    def go_next(self, loop=False):
-        changed = self.xsheet.go_next(loop)
-#        self.metronome.tick()
-        return changed
-
     def toggle_play_stop(self):
         if self.play_hid == None:
-            self.play_hid = GObject.timeout_add(42, self.go_next, True)
+            self.play_hid = GObject.timeout_add(42, self.xsheet.next_frame, True)
         else:
             GObject.source_remove(self.play_hid)
             self.play_hid = None
@@ -253,9 +245,9 @@ class XSheetApp(GObject.GObject):
 
     def key_press_cb(self, widget, event):
         if event.keyval == Gdk.KEY_Up:
-            self.go_previous()
+            self.xsheet.previous_frame()
         elif event.keyval == Gdk.KEY_Down:
-            self.go_next()
+            self.xsheet.next_frame()
 
     def key_release_cb(self, widget, event):
         if event.keyval == Gdk.KEY_p:
@@ -267,6 +259,10 @@ class XSheetApp(GObject.GObject):
         elif event.keyval == Gdk.KEY_BackSpace:
             # FIXME, needs to be done in gegl backend
             self.surface.clear()
+        elif event.keyval == Gdk.KEY_Left:
+            self.xsheet.previous_layer()
+        elif event.keyval == Gdk.KEY_Right:
+            self.xsheet.next_layer()
 
 if __name__ == '__main__':
     Gegl.init([])

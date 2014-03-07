@@ -10,7 +10,8 @@ class Cel(object):
 
 class XSheet(GObject.GObject):
     __gsignals__ = {
-        "changed": (GObject.SignalFlags.RUN_FIRST, None, []),
+        "frame-changed": (GObject.SignalFlags.RUN_FIRST, None, []),
+        "layer-changed": (GObject.SignalFlags.RUN_FIRST, None, []),
     }
 
     def __init__(self, frames_length=24, layers_length=3):
@@ -29,10 +30,10 @@ class XSheet(GObject.GObject):
 
         self.frame_idx = frame_idx
 
-        self.emit("changed")
+        self.emit("frame-changed")
         return True
 
-    def go_previous(self, loop=False):
+    def previous_frame(self, loop=False):
         if not loop:
             if self.frame_idx == 0:
                 return False
@@ -43,12 +44,12 @@ class XSheet(GObject.GObject):
 
         self.frame_idx -= 1
 
-        self.emit("changed")
+        self.emit("frame-changed")
         return True
 
-    def go_next(self, loop=False):
+    def next_frame(self, loop=False):
         if not loop:
-            if self.frame_idx == -1:
+            if self.frame_idx == self.frames_length-1:
                 return False
         else:
             if self.frame_idx == self.frames_length-1:
@@ -57,7 +58,25 @@ class XSheet(GObject.GObject):
 
         self.frame_idx += 1
 
-        self.emit("changed")
+        self.emit("frame-changed")
+        return True
+
+    def previous_layer(self):
+        if self.layer_idx == 0:
+            return False
+
+        self.layer_idx -= 1
+
+        self.emit("layer-changed")
+        return True
+
+    def next_layer(self):
+        if self.layer_idx == self.layers_length-1:
+            return False
+
+        self.layer_idx += 1
+
+        self.emit("layer-changed")
         return True
 
     def get_cel(self, frame_idx=None, layer_idx=None):

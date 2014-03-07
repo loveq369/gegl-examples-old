@@ -4,7 +4,7 @@ from gi.repository import Gst
 class Metronome(object):
     def __init__(self, xsheet):
         Gst.init([])
-        xsheet.connect('changed', self.xsheet_changed_cb)
+        xsheet.connect('frame-changed', self.xsheet_changed_cb)
 
         self._player = Gst.ElementFactory.make("playbin", "tick")
         fakesink = Gst.ElementFactory.make("fakesink", "fake")
