@@ -20,7 +20,8 @@ class XSheet(GObject.GObject):
         self.layer_idx = 0
         self.frames = [[] for x in range(layers_length)]
         for frame_idx in range(frames_length):
-            self.frames[0].append(Cel())
+            for layer_idx in range(layers_length):
+                self.frames[layer_idx].append(Cel())
 
     def go_to_frame(self, frame_idx):
         if frame_idx < 0 or frame_idx > self.frames_length-1 or frame_idx == self.frame_idx:

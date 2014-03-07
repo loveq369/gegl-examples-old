@@ -28,10 +28,12 @@ class _XSheetDrawing(Gtk.DrawingArea):
 
         self.props.vexpand = True
 
-        self._background_color = self.get_style_context().lookup_color('theme_bg_color')[1]
-        self._selected_color = self.get_style_context().lookup_color('theme_selected_bg_color')[1]
-        self._fg_color = self.get_style_context().lookup_color('theme_fg_color')[1]
-        self._selected_fg_color = self.get_style_context().lookup_color('theme_selected_fg_color')[1]
+        self._background_color = _get_cairo_color(self.get_style_context().lookup_color('theme_bg_color')[1])
+        self._background_color_high = _get_cairo_color(self.get_style_context().lookup_color('theme_bg_color')[1])
+        self._background_color_high = [color * 1.05 for color in self._background_color_high]
+        self._selected_color = _get_cairo_color(self.get_style_context().lookup_color('theme_selected_bg_color')[1])
+        self._fg_color = _get_cairo_color(self.get_style_context().lookup_color('theme_fg_color')[1])
+        self._selected_fg_color = _get_cairo_color(self.get_style_context().lookup_color('theme_selected_fg_color')[1])
 
         self._xsheet = xsheet
         self._adjustment = adjustment
@@ -105,8 +107,15 @@ class _XSheetDrawing(Gtk.DrawingArea):
     def draw_background(self, context):
         width = context.get_target().get_width()
         height = context.get_target().get_height()
-        context.set_source_rgb(*_get_cairo_color(self._background_color))
-        context.rectangle(0, 0, width, height)
+        current_layer_x = NUMBERS_WIDTH + self._xsheet.layer_idx * CEL_WIDTH
+
+        context.set_source_rgb(*self._background_color)
+        context.rectangle(0, 0, current_layer_x, height)
+        context.rectangle(current_layer_x + CEL_WIDTH, 0, width, height)
+        context.fill()
+
+        context.set_source_rgb(*self._background_color_high)
+        context.rectangle(current_layer_x, 0, CEL_WIDTH, height)
         context.fill()
 
     def draw_selected_row(self, context):
@@ -114,7 +123,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
             if i == self._xsheet.frame_idx:
                 y = i * CEL_HEIGHT * self._zoom_factor
                 width = context.get_target().get_width()
-                context.set_source_rgb(*_get_cairo_color(self._selected_color))
+                context.set_source_rgb(*self._selected_color)
                 context.rectangle(0, y, width, CEL_HEIGHT * self._zoom_factor)
                 context.fill()
                 break
@@ -125,7 +134,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
             line_factor = 0.5
 
         width = context.get_target().get_width()
-        context.set_source_rgb(*_get_cairo_color(self._fg_color))
+        context.set_source_rgb(*self._fg_color)
         for i in range(self._xsheet.frames_length + 1):
             if i % 24 == 0:
                 context.set_line_width(SECONDS_LINE_WIDTH)
@@ -140,7 +149,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
             context.stroke()
 
     def draw_grid_vertical(self, context):
-        context.set_source_rgb(*_get_cairo_color(self._fg_color))
+        context.set_source_rgb(*self._fg_color)
         context.set_line_width(SOFT_LINE_WIDTH)
 
         y1 = 0
@@ -175,9 +184,9 @@ class _XSheetDrawing(Gtk.DrawingArea):
                 continue
 
             if i == self._xsheet.frame_idx:
-                context.set_source_rgb(*_get_cairo_color(self._selected_fg_color))
+                context.set_source_rgb(*self._selected_fg_color)
             else:
-                context.set_source_rgb(*_get_cairo_color(self._fg_color))
+                context.set_source_rgb(*self._fg_color)
 
             text = str(i+1).zfill(3)
             x, y, width, height, dx, dy = context.text_extents(text)
@@ -188,9 +197,9 @@ class _XSheetDrawing(Gtk.DrawingArea):
     def draw_elements(self, context):
         i = 0
         if i == self._xsheet.frame_idx:
-            context.set_source_rgb(*_get_cairo_color(self._selected_fg_color))
+            context.set_source_rgb(*self._selected_fg_color)
         else:
-            context.set_source_rgb(*_get_cairo_color(self._fg_color))
+            context.set_source_rgb(*self._fg_color)
 
         context.arc(NUMBERS_WIDTH + CEL_WIDTH/2, CEL_HEIGHT * self._zoom_factor /2, ELEMENT_CEL_RADIUS, 0, 2 * math.pi);
         context.fill()
