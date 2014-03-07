@@ -16,57 +16,65 @@ class XSheet(GObject.GObject):
     def __init__(self, frames_length=24, layers_length=3):
         GObject.GObject.__init__(self)
 
-        self.idx = 0
+        self.frame_idx = 0
         self.layer_idx = 0
         self.frames = [[] for x in range(layers_length)]
-        for idx in range(frames_length):
+        for frame_idx in range(frames_length):
             self.frames[0].append(Cel())
 
-    def go_to_frame(self, idx):
-        if idx < 0 or idx > self.frames_length-1 or idx == self.idx:
+    def go_to_frame(self, frame_idx):
+        if frame_idx < 0 or frame_idx > self.frames_length-1 or frame_idx == self.frame_idx:
             return False
 
-        self.idx = idx
+        self.frame_idx = frame_idx
 
         self.emit("changed")
         return True
 
     def go_previous(self, loop=False):
         if not loop:
-            if self.idx == 0:
+            if self.frame_idx == 0:
                 return False
         else:
-            if self.idx == 0:
-                self.idx = self.frames_length-1
+            if self.frame_idx == 0:
+                self.frame_idx = self.frames_length-1
                 return True
 
-        self.idx -= 1
+        self.frame_idx -= 1
 
         self.emit("changed")
         return True
 
     def go_next(self, loop=False):
         if not loop:
-            if self.idx == -1:
+            if self.frame_idx == -1:
                 return False
         else:
-            if self.idx == self.frames_length-1:
-                self.idx = 0
+            if self.frame_idx == self.frames_length-1:
+                self.frame_idx = 0
                 return True
 
-        self.idx += 1
+        self.frame_idx += 1
 
         self.emit("changed")
         return True
 
-    def get_cel(self, idx=None):
-        if idx is None:
-            idx = self.idx
+    def get_cel(self, frame_idx=None, layer_idx=None):
+        if frame_idx is None:
+            frame_idx = self.frame_idx
 
-        if idx < 0 or idx > self.frames_length-1:
+        if layer_idx is None:
+            layer_idx = self.layer_idx
+
+        if frame_idx < 0 or frame_idx > self.frames_length-1:
             return False
 
-        return self.frames[self.layer_idx][idx]
+        return self.frames[layer_idx][frame_idx]
+
+    def get_cel_relative(self, frame_diff=0, layer_diff=0):
+        frame_idx = self.frame_idx + frame_diff
+        layer_idx = self.layer_idx + layer_diff
+        return self.get_cel(frame_idx, layer_idx)
 
     @property
     def frames_length(self):

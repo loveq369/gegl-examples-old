@@ -87,14 +87,14 @@ class XSheetApp(GObject.GObject):
         if not self.onionskin_on:
             return
 
-        prev_cel1 = self.xsheet.get_cel(self.xsheet.idx-1)
+        prev_cel1 = self.xsheet.get_cel_relative(-1)
         if prev_cel1:
             prev_surface_node1 = prev_cel1.surface_node
             prev_surface_node1.connect_to("output", self.over3, "input")
         else:
             self.over3.disconnect("input")
 
-        prev_cel2 = self.xsheet.get_cel(self.xsheet.idx-2)
+        prev_cel2 = self.xsheet.get_cel_relative(-2)
         if prev_cel2:
             prev_surface_node2 = prev_cel2.surface_node
             prev_surface_node2.connect_to("output", self.opacity_prev2, "input")

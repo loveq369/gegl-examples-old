@@ -111,7 +111,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
 
     def draw_selected_row(self, context):
         for i in range(self._xsheet.frames_length):
-            if i == self._xsheet.idx:
+            if i == self._xsheet.frame_idx:
                 y = i * CEL_HEIGHT * self._zoom_factor
                 width = context.get_target().get_width()
                 context.set_source_rgb(*_get_cairo_color(self._selected_color))
@@ -174,7 +174,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
             if i % draw_step != 0:
                 continue
 
-            if i == self._xsheet.idx:
+            if i == self._xsheet.frame_idx:
                 context.set_source_rgb(*_get_cairo_color(self._selected_fg_color))
             else:
                 context.set_source_rgb(*_get_cairo_color(self._fg_color))
@@ -187,7 +187,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
 
     def draw_elements(self, context):
         i = 0
-        if i == self._xsheet.idx:
+        if i == self._xsheet.frame_idx:
             context.set_source_rgb(*_get_cairo_color(self._selected_fg_color))
         else:
             context.set_source_rgb(*_get_cairo_color(self._fg_color))
@@ -204,14 +204,14 @@ class _XSheetDrawing(Gtk.DrawingArea):
     def button_release_cb(self, widget, event):
         self._button_pressed = False
 
-        idx = self._get_frame_from_point(event.x, event.y)
-        self._xsheet.go_to_frame(idx)
+        frame_idx = self._get_frame_from_point(event.x, event.y)
+        self._xsheet.go_to_frame(frame_idx)
 
     def motion_notify_cb(self, widget, event):
         x, y = event.x, event.y
-        idx = self._get_frame_from_point(event.x, event.y)
+        frame_idx = self._get_frame_from_point(event.x, event.y)
         if self._button_pressed:
-            self._xsheet.go_to_frame(idx)
+            self._xsheet.go_to_frame(frame_idx)
 
     def zoom(self, direction):
         new_zoom = self._zoom_factor + ZOOM_STEP * direction
