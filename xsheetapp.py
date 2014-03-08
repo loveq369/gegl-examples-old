@@ -40,8 +40,8 @@ class XSheetApp(GObject.GObject):
         self.button_pressed = False
         self.last_event = (0.0, 0.0, 0.0) # (x, y, time)
 
-        self.eraser_on = False
         self.onionskin_on = True
+        self.eraser_on = False
 
         self.surface = None
         self.surface_node = None
@@ -123,10 +123,13 @@ class XSheetApp(GObject.GObject):
         toolbar.show()
 
         factory = Gtk.IconFactory()
-        for icon_name in ['xsheet-onionskin', 'xsheet-play', 'xsheet-eraser']:
-            pixbuf = GdkPixbuf.Pixbuf.new_from_file(os.path.join('data', 'icons', icon_name + '.svg'))
+        icon_names = ['xsheet-onionskin', 'xsheet-play', 'xsheet-eraser',
+                      'xsheet-metronome']
+        for name in icon_names:
+            filename = os.path.join('data', 'icons', name + '.svg')
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename)
             iconset = Gtk.IconSet.new_from_pixbuf(pixbuf)
-            factory.add(icon_name, iconset)
+            factory.add(name, iconset)
             factory.add_default()
 
         play_button = Gtk.ToggleToolButton()
@@ -147,6 +150,12 @@ class XSheetApp(GObject.GObject):
         eraser_button.connect("toggled", self.toggle_eraser_cb)
         toolbar.insert(eraser_button, -1)
         eraser_button.show()
+
+        metronome_button = Gtk.ToggleToolButton()
+        metronome_button.set_stock_id("xsheet-metronome")
+        metronome_button.connect("toggled", self.toggle_metronome_cb)
+        toolbar.insert(metronome_button, -1)
+        metronome_button.show()
 
         event_box = Gtk.EventBox()
         event_box.connect("motion-notify-event", self.motion_to_cb)
@@ -242,6 +251,15 @@ class XSheetApp(GObject.GObject):
 
     def toggle_eraser_cb(self, widget):
         self.toggle_eraser()
+
+    def toggle_metronome(self):
+        if self.metronome.is_on():
+            self.metronome.activate()
+        else:
+            self.metronome.deactivate()
+
+    def toggle_metronome_cb(self, widget):
+        self.toggle_metronome()
 
     def key_press_cb(self, widget, event):
         if event.keyval == Gdk.KEY_Up:

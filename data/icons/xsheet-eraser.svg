@@ -245,9 +245,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="15.999999"
-     inkscape:cx="-5.951264"
-     inkscape:cy="13.091579"
+     inkscape:zoom="20.928883"
+     inkscape:cx="2.6431363"
+     inkscape:cy="11.966586"
      inkscape:document-units="px"
      inkscape:current-layer="layer2"
      width="48px"
@@ -276,7 +276,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -285,12 +285,18 @@
      id="layer2"
      inkscape:label="default">
     <rect
-       style="color:#000000;fill:none;stroke:#202020;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       style="color:#000000;fill:none;stroke:#202020;stroke-width:1.94242311;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
        id="rect3036"
-       width="13.119229"
-       height="18.55673"
-       x="5.4403853"
-       y="2.7216351"
-       ry="4.6570945" />
+       width="12.741547"
+       height="18.022511"
+       x="5.6292267"
+       y="2.9887452"
+       ry="4.5230241" />
+    <path
+       style="color:#000000;fill:none;stroke:#202020;stroke-width:1.13549149;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       d="m 8.5771689,8.4688416 c 0,-1.5937692 1.2830704,-2.200391 2.8768391,-2.200391 l 1.091985,0 m 2.876839,6.2003914 0,3.062318 c 0,1.593769 -1.283071,2.200391 -2.876839,2.200391 l -1.091985,0"
+       id="rect4722"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="csccssc" />
   </g>
 </svg>
