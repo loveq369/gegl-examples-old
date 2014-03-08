@@ -9,7 +9,7 @@ NUMBERS_MARGIN = 5.0
 CEL_WIDTH = 55.0
 CEL_HEIGHT = 25.0
 
-MIN_ZOOM = 0.1
+MIN_ZOOM = 0.01
 MAX_ZOOM = 4.0
 ZOOM_STEP = 0.05
 
@@ -134,6 +134,13 @@ class _XSheetDrawing(Gtk.DrawingArea):
                 break
 
     def draw_grid_horizontal(self, context):
+        pass_frame_lines = False
+        pass_separation_lines = False
+        if self._zoom_factor * CEL_HEIGHT < 5:
+            pass_frame_lines = True
+        if self._zoom_factor * CEL_HEIGHT * self._xsheet.frames_separation < 5:
+            pass_separation_lines = True
+
         line_factor = 1
         if  self._zoom_factor < 0.2:
             line_factor = 0.5
@@ -143,10 +150,14 @@ class _XSheetDrawing(Gtk.DrawingArea):
         for i in range(self._xsheet.frames_length + 1):
             if i % 24 == 0:
                 context.set_line_width(SECONDS_LINE_WIDTH)
-            elif i % self._xsheet.frames_separation:
-                context.set_line_width(SOFT_LINE_WIDTH * line_factor)
-            else:
+            elif i % self._xsheet.frames_separation == 0:
+                if pass_separation_lines:
+                    continue
                 context.set_line_width(STRONG_LINE_WIDTH * line_factor)
+            else:
+                if pass_frame_lines:
+                    continue
+                context.set_line_width(SOFT_LINE_WIDTH * line_factor)
 
             y = i * CEL_HEIGHT * self._zoom_factor
             context.move_to(0, y)
@@ -179,7 +190,9 @@ class _XSheetDrawing(Gtk.DrawingArea):
         context.set_font_size(13)
 
         draw_step = 1
-        if  self._zoom_factor < 0.2:
+        if self._zoom_factor < 0.15:
+            draw_step = 8
+        elif  self._zoom_factor < 0.2:
             draw_step = 4
         elif self._zoom_factor < 0.6:
             draw_step = 2
