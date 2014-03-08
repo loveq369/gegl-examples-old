@@ -60,10 +60,13 @@ class _XSheetDrawing(Gtk.DrawingArea):
         widget_width = NUMBERS_WIDTH + CEL_WIDTH * self._xsheet.layers_length
         self.set_size_request(widget_width, -1)
 
+    @property
+    def virtual_height(self):
+        return self._xsheet.frames_length * CEL_HEIGHT * self._zoom_factor
+
     def configure(self):
         width = self.get_allocated_width()
-        height = max(self.props.parent.get_allocated_height(),
-                     int(CEL_HEIGHT * self._zoom_factor * self._xsheet.frames_length))
+        height = self.props.parent.get_allocated_height()
 
         if self._pixbuf is not None:
             self._pixbuf.finish()
@@ -71,7 +74,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
 
         self._pixbuf = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
 
-        self._adjustment.props.page_size = CEL_HEIGHT / height
+        self._adjustment.props.page_size = CEL_HEIGHT / self.virtual_height
 
     def configure_event_cb(self, widget, event, data=None):
         self.configure()
@@ -81,7 +84,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
         self.queue_draw()
 
     def update_offset(self):
-        dy = self._pixbuf.get_height() - self.get_allocated_height()
+        dy = self.virtual_height - self.get_allocated_height()
         dx = self._adjustment.props.upper - self._adjustment.props.page_size
         self._offset = -1 * self._adjustment.props.value * dy / dx
 
@@ -95,6 +98,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
             return False
 
         drawing_context = cairo.Context(self._pixbuf)
+        drawing_context.translate(0, self._offset)
 
         self.draw_background(drawing_context)
         self.draw_selected_row(drawing_context)
@@ -102,12 +106,12 @@ class _XSheetDrawing(Gtk.DrawingArea):
         self.draw_numbers(drawing_context)
         self.draw_elements(drawing_context)
 
-        context.set_source_surface(self._pixbuf, 0.0, self._offset)
+        context.set_source_surface(self._pixbuf, 0, 0)
         context.paint()
 
     def draw_background(self, context):
-        width = context.get_target().get_width()
-        height = context.get_target().get_height()
+        width = NUMBERS_WIDTH + self._xsheet.layers_length * CEL_WIDTH
+        height = self.virtual_height
         current_layer_x = NUMBERS_WIDTH + self._xsheet.layer_idx * CEL_WIDTH
 
         context.set_source_rgb(*self._background_color)
@@ -154,7 +158,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
         context.set_line_width(SOFT_LINE_WIDTH)
 
         y1 = 0
-        y2 = self._xsheet.frames_length * CEL_HEIGHT * self._zoom_factor
+        y2 = self.virtual_height
 
         context.move_to(NUMBERS_WIDTH, y1)
         context.line_to(NUMBERS_WIDTH, y2)
