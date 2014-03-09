@@ -2,6 +2,9 @@ from gi.repository import GObject
 
 from lib import tiledsurface
 
+from cellist import CelList
+
+
 class Cel(object):
     def __init__(self):
         self.surface = tiledsurface.GeglSurface()
@@ -17,12 +20,10 @@ class XSheet(GObject.GObject):
     def __init__(self, frames_length=24, layers_length=3):
         GObject.GObject.__init__(self)
 
+        self._frames_length = frames_length
         self.frame_idx = 0
         self.layer_idx = 0
-        self.frames = [[] for x in range(layers_length)]
-        for frame_idx in range(frames_length):
-            for layer_idx in range(layers_length):
-                self.frames[layer_idx].append(Cel())
+        self.layers = [CelList() for x in range(layers_length)]
 
     def go_to_frame(self, frame_idx):
         if frame_idx < 0 or frame_idx > self.frames_length-1 or frame_idx == self.frame_idx:
@@ -86,10 +87,18 @@ class XSheet(GObject.GObject):
         if layer_idx is None:
             layer_idx = self.layer_idx
 
-        if frame_idx < 0 or frame_idx > self.frames_length-1:
-            return False
+        return self.layers[layer_idx][frame_idx]
 
-        return self.frames[layer_idx][frame_idx]
+    def add_cel(self, frame_idx=None, layer_idx=None):
+        if frame_idx is None:
+            frame_idx = self.frame_idx
+
+        if layer_idx is None:
+            layer_idx = self.layer_idx
+
+        self.layers[layer_idx][frame_idx] = Cel()
+
+        self.emit("frame-changed")
 
     def get_cel_relative(self, frame_diff=0, layer_diff=0):
         frame_idx = self.frame_idx + frame_diff
@@ -98,11 +107,11 @@ class XSheet(GObject.GObject):
 
     @property
     def frames_length(self):
-        return len(self.frames[0])
+        return self._frames_length
 
     @property
     def layers_length(self):
-        return len(self.frames)
+        return len(self.layers)
 
     @property
     def frames_separation(self):

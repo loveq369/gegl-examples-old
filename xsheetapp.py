@@ -83,20 +83,23 @@ class XSheetApp(GObject.GObject):
         self.update_graph()
 
     def update_graph(self):
-        self.surface_node.connect_to("output", self.over2, "input")
+        if self.surface_node is not None:
+            self.surface_node.connect_to("output", self.over2, "input")
+        else:
+            self.over2.disconnect("input")
 
         if not self.onionskin_on:
             return
 
         prev_cel1 = self.xsheet.get_cel_relative(-1)
-        if prev_cel1:
+        if prev_cel1 is not None:
             prev_surface_node1 = prev_cel1.surface_node
             prev_surface_node1.connect_to("output", self.over3, "input")
         else:
             self.over3.disconnect("input")
 
         prev_cel2 = self.xsheet.get_cel_relative(-2)
-        if prev_cel2:
+        if prev_cel2 is not None:
             prev_surface_node2 = prev_cel2.surface_node
             prev_surface_node2.connect_to("output", self.opacity_prev2, "input")
         else:
@@ -187,6 +190,10 @@ class XSheetApp(GObject.GObject):
         self.background_node.set_property("height", allocation.height)
 
     def motion_to_cb(self, widget, event):
+        # FIXME, better disconnect
+        if self.surface is None:
+            return
+
         (x, y, time) = event.x, event.y, event.time
 
         pressure = 0.5
@@ -211,8 +218,12 @@ class XSheetApp(GObject.GObject):
 
     def update_surface(self):
         cel = self.xsheet.get_cel()
-        self.surface = cel.surface
-        self.surface_node = cel.surface_node
+        if cel is not None:
+            self.surface = cel.surface
+            self.surface_node = cel.surface_node
+        else:
+            self.surface = None
+            self.surface_node = None
 
     def toggle_play_stop(self):
         if self.play_hid == None:
@@ -268,7 +279,9 @@ class XSheetApp(GObject.GObject):
             self.xsheet.next_frame()
 
     def key_release_cb(self, widget, event):
-        if event.keyval == Gdk.KEY_p:
+        if event.keyval == Gdk.KEY_c:
+            self.xsheet.add_cel()
+        elif event.keyval == Gdk.KEY_p:
             self.toggle_play_stop()
         elif event.keyval == Gdk.KEY_o:
             self.toggle_onionskin()
@@ -276,7 +289,8 @@ class XSheetApp(GObject.GObject):
             self.toggle_eraser()
         elif event.keyval == Gdk.KEY_BackSpace:
             # FIXME, needs to be done in gegl backend
-            self.surface.clear()
+            if self.surface is not None:
+                self.surface.clear()
         elif event.keyval == Gdk.KEY_Left:
             self.xsheet.previous_layer()
         elif event.keyval == Gdk.KEY_Right:
