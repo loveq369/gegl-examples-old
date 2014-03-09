@@ -99,7 +99,7 @@ class XSheet(GObject.GObject):
         if layer_idx is None:
             layer_idx = self.layer_idx
 
-        if self.layers[layer_idx][frame_idx] is None or frame_idx not in self.layers[layer_idx].get_changing_frames():
+        if self.layers[layer_idx].is_unset_at([frame_idx]):
             self.layers[layer_idx][frame_idx] = Cel()
             self.emit("frame-changed")
 

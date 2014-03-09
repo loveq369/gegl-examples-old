@@ -32,6 +32,10 @@ class CelList(object):
 
         return result
 
+    def is_unset_at(self, frame_idx):
+        return (self[frame_idx] is None or
+                frame_idx not in self.get_changing_frames())
+
 
 __test__ = dict(allem="""
 
@@ -93,12 +97,24 @@ We can ask the frames where cels change:
 >>> cels.get_changing_frames()
 [0, 3, 6]
 
+"Is unset" means the cels do not change at the specified frame, or do
+change but is None.
+
+>>> cels.is_unset_at(0)
+True
+
+>>> cels.is_unset_at(1)
+True
+
 Let's do more operations.  Here we add one more cel and remove
 another.
 
 >>> cels[1] = 'a'
 >>> cels[1]
 'a'
+
+>>> cels.is_unset_at(1)
+False
 
 >>> cels.get_until_last_change()
 [None, 'a', 'a', 'b', 'b', 'b', None]
