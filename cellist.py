@@ -19,7 +19,7 @@ class CelList(object):
         self._cels.pop(frame_idx)
 
     def get_changing_frames(self):
-        return self._cels.keys()
+        return sorted(self._cels.keys())
 
     def get_until_last_change(self):
         changing_frames = self.get_changing_frames()
@@ -111,6 +111,22 @@ another.
 >>> del cels[3]
 Traceback (most recent call last):
 KeyError: 3
+
+Another example:
+
+>>> cels = CelList()
+>>> cels[0] = 123
+>>> cels[2] = 555
+>>> cels[12] = 888
+>>> cels.get_until_last_change()
+[123, 123, 555, 555, 555, 555, 555, 555, 555, 555, 555, 555, 888]
+
+>>> cels[6] = 232
+>>> cels[6]
+232
+
+>>> cels.get_until_last_change()
+[123, 123, 555, 555, 555, 555, 232, 232, 232, 232, 232, 232, 888]
 
 """)
 

@@ -99,9 +99,9 @@ class XSheet(GObject.GObject):
         if layer_idx is None:
             layer_idx = self.layer_idx
 
-        self.layers[layer_idx][frame_idx] = Cel()
-
-        self.emit("frame-changed")
+        if self.layers[layer_idx][frame_idx] is None or frame_idx not in self.layers[layer_idx].get_changing_frames():
+            self.layers[layer_idx][frame_idx] = Cel()
+            self.emit("frame-changed")
 
     def get_cel_relative(self, frame_diff=0, layer_diff=0):
         frame_idx = self.frame_idx + frame_diff
