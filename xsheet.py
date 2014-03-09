@@ -25,6 +25,9 @@ class XSheet(GObject.GObject):
         self.layer_idx = 0
         self.layers = [CelList() for x in range(layers_length)]
 
+    def get_layers(self):
+        return self.layers
+
     def go_to_frame(self, frame_idx):
         if frame_idx < 0 or frame_idx > self.frames_length-1 or frame_idx == self.frame_idx:
             return False

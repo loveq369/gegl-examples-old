@@ -212,15 +212,24 @@ class _XSheetDrawing(Gtk.DrawingArea):
                             (i * CEL_HEIGHT * self._zoom_factor) + CEL_HEIGHT * self._zoom_factor /2 + height/2)
             context.show_text(text)
 
-    def draw_elements(self, context):
-        i = 0
-        if i == self._xsheet.frame_idx:
+    def _draw_cel(self, context, layer_idx, frame_idx, cel):
+        if frame_idx == self._xsheet.frame_idx:
             context.set_source_rgb(*self._selected_fg_color)
         else:
             context.set_source_rgb(*self._fg_color)
 
-        context.arc(NUMBERS_WIDTH + CEL_WIDTH/2, CEL_HEIGHT * self._zoom_factor /2, ELEMENT_CEL_RADIUS, 0, 2 * math.pi);
+        context.arc(NUMBERS_WIDTH + CEL_WIDTH * (layer_idx + 0.5),
+                    CEL_HEIGHT * self._zoom_factor * (frame_idx + 0.5),
+                    ELEMENT_CEL_RADIUS, 0, 2 * math.pi);
         context.fill()
+
+    def draw_elements(self, context):
+        for layer_idx in range(self._xsheet.layers_length):
+            layer = self._xsheet.get_layers()[layer_idx]
+            for frame_idx in layer.get_changing_frames():
+                cel = layer[frame_idx]
+                if cel is not None:
+                    self._draw_cel(context, layer_idx, frame_idx, cel)
 
     def _get_frame_from_point(self, x, y):
         return int((y - self._offset) / CEL_HEIGHT / self._zoom_factor)
@@ -264,6 +273,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
                 self._adjustment.props.value -= self._adjustment.props.page_size
             elif event.direction == Gdk.ScrollDirection.DOWN:
                 self._adjustment.props.value += self._adjustment.props.page_size
+
 
 class XSheetWidget(Gtk.Grid):
     def __init__(self, xsheet):
