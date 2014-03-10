@@ -69,14 +69,17 @@ class XSheetApp(GObject.GObject):
     def create_graph(self):
         self.graph = Gegl.Node()
 
-        self.over = self.graph.create_child("gegl:over")
+        main_over = self.graph.create_child("gegl:over")
+        self.nodes['main_over'] = main_over
 
-        self.background_node = self.graph.create_child("gegl:rectangle")
-        self.background_node.set_property('color', Gegl.Color.new("#fff"))
-        self.background_node.connect_to("output", self.over, "input")
+        background_node = self.graph.create_child("gegl:rectangle")
+        background_node.set_property('color', Gegl.Color.new("#fff"))
+        background_node.connect_to("output", main_over, "input")
+        self.nodes['background'] = background_node
 
         current_cel_over = self.graph.create_child("gegl:over")
-        current_cel_over.connect_to("output", self.over, "aux")
+        current_cel_over.connect_to("output", main_over, "aux")
+        self.nodes['current_cel_over'] = current_cel_over
 
         onionskin_overs = []
         onionskin_opacities = []
@@ -95,7 +98,6 @@ class XSheetApp(GObject.GObject):
 
         onionskin_opacities[0].connect_to("output", current_cel_over, "aux")
 
-        self.nodes['current_cel_over'] = current_cel_over
         self.nodes['onionskin'] = {}
         self.nodes['onionskin']['overs'] = onionskin_overs
         self.nodes['onionskin']['opacities'] = onionskin_opacities
@@ -128,7 +130,7 @@ class XSheetApp(GObject.GObject):
                 over.disconnect("input")
 
         # debug
-        # print_connections(self.over)
+        # print_connections(self.nodes['main_over'])
 
     def init_ui(self):
         window = Gtk.Window()
@@ -191,7 +193,7 @@ class XSheetApp(GObject.GObject):
         event_box.show()
 
         view_widget = GeglGtk.View()
-        view_widget.set_node(self.over)
+        view_widget.set_node(self.nodes['main_over'])
         view_widget.set_autoscale_policy(GeglGtk.ViewAutoscale.DISABLED)
         view_widget.set_size_request(800, 400)
         event_box.add(view_widget)
@@ -208,8 +210,9 @@ class XSheetApp(GObject.GObject):
         Gtk.main_quit()
 
     def size_allocate_cb(self, widget, allocation):
-        self.background_node.set_property("width", allocation.width)
-        self.background_node.set_property("height", allocation.height)
+        background_node = self.nodes['background']
+        self.nodes['background'].set_property("width", allocation.width)
+        self.nodes['background'].set_property("height", allocation.height)
 
     def motion_to_cb(self, widget, event):
         # FIXME, better disconnect
