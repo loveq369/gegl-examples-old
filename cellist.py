@@ -39,6 +39,10 @@ class CelList(object):
         idx = bisect.bisect(changing_frames, frame_idx)
         if idx == 0:
             return None
+        if cel_diff == 0:
+            return self._cels[changing_frames[idx - 1]]
+        if idx - 1 + cel_diff < 0:
+            return None
         try:
             return self._cels[changing_frames[idx - 1 + cel_diff]]
         except IndexError:
@@ -173,6 +177,9 @@ Another example:
 
 >>> cels.get_until_last_change()
 [123, 123, 555, 555, 555, 555, 232, 232, 232, 232, 232, 232, 888]
+
+>>> cels.get_relative(0, -1) is None
+True
 
 """)
 
