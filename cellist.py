@@ -2,7 +2,7 @@ import bisect
 
 class CelList(object):
     def __init__(self):
-        self._cels = {0: None}
+        self._cels = {}
 
     def __len__(self):
         return 0
@@ -10,6 +10,8 @@ class CelList(object):
     def __getitem__(self, frame_idx):
         changing_frames = self.get_changing_frames()
         idx = bisect.bisect(changing_frames, frame_idx)
+        if idx == 0:
+            return None
         return self._cels[changing_frames[idx-1]]
 
     def __setitem__(self, frame_idx, cel):
@@ -50,6 +52,9 @@ True
 >>> cels[23] == None
 True
 
+>>> cels[-3] == None
+True
+
 >>> len(cels) == 0
 True
 
@@ -66,23 +71,12 @@ frame, the cel is repeated until None is assigned.
 >>> cels[119]
 'b'
 
-As said before, CelList are infinite.  Don't try something like this
-because it will never end:
-
-# for cel in cels:
-#    ...
-
-You can, however, iterate the list until the last change:
-
->>> cels.get_until_last_change()
-[None, None, None, 'b']
+>>> cels[2] is None
+True
 
 To clear the following frames, assign None.
 
 >>> cels[6] = None
->>> cels.get_until_last_change()
-[None, None, None, 'b', 'b', 'b', None]
-
 >>> cels[6] is None
 True
 
@@ -92,10 +86,24 @@ True
 >>> cels[119] is None
 True
 
+>>> cels[5]
+'b'
+
+As said before, CelList are infinite.  Don't try something like this
+because it will never end:
+
+# for cel in cels:
+#    ...
+
+You can, however, iterate the list until the last change:
+
+>>> cels.get_until_last_change()
+['b', 'b', 'b', None]
+
 We can ask the frames where cels change:
 
 >>> cels.get_changing_frames()
-[0, 3, 6]
+[3, 6]
 
 "Is unset" means the cels do not change at the specified frame, or do
 change but is None.
@@ -103,7 +111,7 @@ change but is None.
 >>> cels.is_unset_at(0)
 True
 
->>> cels.is_unset_at(1)
+>>> cels.is_unset_at(6)
 True
 
 Let's do more operations.  Here we add one more cel and remove
@@ -117,12 +125,12 @@ another.
 False
 
 >>> cels.get_until_last_change()
-[None, 'a', 'a', 'b', 'b', 'b', None]
+['a', 'a', 'b', 'b', 'b', None]
 
 >>> del cels[3]
 
 >>> cels.get_until_last_change()
-[None, 'a', 'a', 'a', 'a', 'a', None]
+['a', 'a', 'a', 'a', 'a', None]
 
 >>> del cels[3]
 Traceback (most recent call last):
