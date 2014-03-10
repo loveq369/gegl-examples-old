@@ -42,6 +42,9 @@ class XSheetApp(GObject.GObject):
 
         self.onionskin_on = True
         self.onionskin_by_cels = True
+        self.onionskin_length = 3
+        self.onionskin_falloff = 0.5
+
         self.eraser_on = False
         self.force_add_cel = True
 
@@ -58,6 +61,7 @@ class XSheetApp(GObject.GObject):
 
         self.update_surface()
 
+        self.nodes = {}
         self.create_graph()
         self.init_ui()
 
@@ -65,53 +69,63 @@ class XSheetApp(GObject.GObject):
     def create_graph(self):
         self.graph = Gegl.Node()
 
+        self.over = self.graph.create_child("gegl:over")
+
         self.background_node = self.graph.create_child("gegl:rectangle")
         self.background_node.set_property('color', Gegl.Color.new("#fff"))
-
-        self.over = self.graph.create_child("gegl:over")
-        self.over2 = self.graph.create_child("gegl:over")
-        self.opacity_prev1 = self.graph.create_child("gegl:opacity")
-        self.opacity_prev1.set_property('value', 0.5)
-        self.over3 = self.graph.create_child("gegl:over")
-        self.opacity_prev2 = self.graph.create_child("gegl:opacity")
-        self.opacity_prev2.set_property('value', 0.5)
-
         self.background_node.connect_to("output", self.over, "input")
-        self.over2.connect_to("output", self.over, "aux")
-        self.opacity_prev1.connect_to("output", self.over2, "aux")
-        self.over3.connect_to("output", self.opacity_prev1, "input")
-        self.opacity_prev2.connect_to("output", self.over3, "aux")
+
+        current_cel_over = self.graph.create_child("gegl:over")
+        current_cel_over.connect_to("output", self.over, "aux")
+
+        onionskin_overs = []
+        onionskin_opacities = []
+        for i in range(self.onionskin_length):
+            over = self.graph.create_child("gegl:over")
+            onionskin_overs.append(over)
+
+            opacity = self.graph.create_child("gegl:opacity")
+            opacity.set_property('value', 1 - self.onionskin_falloff)
+            onionskin_opacities.append(opacity)
+
+            over.connect_to("output", opacity, "input")
+
+        for over, next_opacity in zip(onionskin_overs, onionskin_opacities[1:]):
+            next_opacity.connect_to("output", over, "aux")
+
+        onionskin_opacities[0].connect_to("output", current_cel_over, "aux")
+
+        self.nodes['current_cel_over'] = current_cel_over
+        self.nodes['onionskin'] = {}
+        self.nodes['onionskin']['overs'] = onionskin_overs
+        self.nodes['onionskin']['opacities'] = onionskin_opacities
 
         self.update_graph()
 
     def update_graph(self):
         if self.surface_node is not None:
-            self.surface_node.connect_to("output", self.over2, "input")
+            self.surface_node.connect_to("output", self.nodes['current_cel_over'], "input")
         else:
-            self.over2.disconnect("input")
+            self.nodes['current_cel_over'].disconnect("input")
 
         if not self.onionskin_on:
             return
 
+        get_cel = None
         if self.onionskin_by_cels:
-            prev_cel1 = self.xsheet.get_cel_relative_by_cels(-1)
+            get_cel = self.xsheet.get_cel_relative_by_cels
         else:
-            prev_cel1 = self.xsheet.get_cel_relative(-1)
-        if prev_cel1 is not None:
-            prev_surface_node1 = prev_cel1.surface_node
-            prev_surface_node1.connect_to("output", self.over3, "input")
-        else:
-            self.over3.disconnect("input")
+            get_cel = self.xsheet.get_cel_relative
 
-        if self.onionskin_by_cels:
-            prev_cel2 = self.xsheet.get_cel_relative_by_cels(-2)
-        else:
-            prev_cel2 = self.xsheet.get_cel_relative(-2)
-        if prev_cel2 is not None:
-            prev_surface_node2 = prev_cel2.surface_node
-            prev_surface_node2.connect_to("output", self.opacity_prev2, "input")
-        else:
-            self.opacity_prev2.disconnect("input")
+        for i in range(self.onionskin_length):
+            prev_cel = get_cel(-(i+1))
+            over = self.nodes['onionskin']['overs'][i]
+            opacity = self.nodes['onionskin']['opacities'][i]
+
+            if prev_cel is not None:
+                prev_cel.surface_node.connect_to("output", over, "input")
+            else:
+                over.disconnect("input")
 
         # debug
         # print_connections(self.over)
@@ -249,10 +263,12 @@ class XSheetApp(GObject.GObject):
     def toggle_onionskin(self):
         self.onionskin_on = not self.onionskin_on
 
+        onionskin_opacities = self.nodes['onionskin']['opacities']
+        current_cel_over = self.nodes['current_cel_over']
         if self.onionskin_on:
-            self.opacity_prev1.connect_to("output", self.over2, "aux")
+            onionskin_opacities[0].connect_to("output", current_cel_over, "aux")
         else:
-            self.over2.disconnect("aux")
+            current_cel_over.disconnect("aux")
 
         self.update_graph()
 
