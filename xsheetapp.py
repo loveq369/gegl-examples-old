@@ -41,6 +41,7 @@ class XSheetApp(GObject.GObject):
         self.last_event = (0.0, 0.0, 0.0) # (x, y, time)
 
         self.onionskin_on = True
+        self.onionskin_by_cels = True
         self.eraser_on = False
         self.force_add_cel = True
 
@@ -92,14 +93,20 @@ class XSheetApp(GObject.GObject):
         if not self.onionskin_on:
             return
 
-        prev_cel1 = self.xsheet.get_cel_relative(-1)
+        if self.onionskin_by_cels:
+            prev_cel1 = self.xsheet.get_cel_relative_by_cels(-1)
+        else:
+            prev_cel1 = self.xsheet.get_cel_relative(-1)
         if prev_cel1 is not None:
             prev_surface_node1 = prev_cel1.surface_node
             prev_surface_node1.connect_to("output", self.over3, "input")
         else:
             self.over3.disconnect("input")
 
-        prev_cel2 = self.xsheet.get_cel_relative(-2)
+        if self.onionskin_by_cels:
+            prev_cel2 = self.xsheet.get_cel_relative_by_cels(-2)
+        else:
+            prev_cel2 = self.xsheet.get_cel_relative(-2)
         if prev_cel2 is not None:
             prev_surface_node2 = prev_cel2.surface_node
             prev_surface_node2.connect_to("output", self.opacity_prev2, "input")

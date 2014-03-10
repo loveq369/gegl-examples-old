@@ -8,11 +8,7 @@ class CelList(object):
         return 0
 
     def __getitem__(self, frame_idx):
-        changing_frames = self.get_changing_frames()
-        idx = bisect.bisect(changing_frames, frame_idx)
-        if idx == 0:
-            return None
-        return self._cels[changing_frames[idx-1]]
+        return self.get_relative(frame_idx)
 
     def __setitem__(self, frame_idx, cel):
         self._cels[frame_idx] = cel
@@ -37,6 +33,16 @@ class CelList(object):
     def is_unset_at(self, frame_idx):
         return (self[frame_idx] is None or
                 frame_idx not in self.get_changing_frames())
+
+    def get_relative(self, frame_idx, cel_diff=0):
+        changing_frames = self.get_changing_frames()
+        idx = bisect.bisect(changing_frames, frame_idx)
+        if idx == 0:
+            return None
+        try:
+            return self._cels[changing_frames[idx - 1 + cel_diff]]
+        except IndexError:
+            return None
 
 
 __test__ = dict(allem="""
@@ -114,8 +120,7 @@ True
 >>> cels.is_unset_at(6)
 True
 
-Let's do more operations.  Here we add one more cel and remove
-another.
+Let's add one more cel.
 
 >>> cels[1] = 'a'
 >>> cels[1]
@@ -126,6 +131,23 @@ False
 
 >>> cels.get_until_last_change()
 ['a', 'a', 'b', 'b', 'b', None]
+
+Fon animation, is important to get the N previous different cel from a
+frame, and the next N different cel:
+
+>>> cels.get_relative(4, -1)
+'a'
+
+>>> cels.get_relative(4, 1) is None
+True
+
+>>> cels.get_relative(2, -1) is None
+True
+
+>>> cels.get_relative(2, 1)
+'b'
+
+This is how removing works.
 
 >>> del cels[3]
 

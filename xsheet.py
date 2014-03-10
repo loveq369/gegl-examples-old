@@ -92,6 +92,16 @@ class XSheet(GObject.GObject):
 
         return self.layers[layer_idx][frame_idx]
 
+    def get_cel_relative(self, frame_diff=0, layer_diff=0):
+        frame_idx = self.frame_idx + frame_diff
+        layer_idx = self.layer_idx + layer_diff
+        return self.layers[layer_idx][frame_idx]
+
+    def get_cel_relative_by_cels(self, cel_diff, frame_diff=0, layer_diff=0):
+        frame_idx = self.frame_idx + frame_diff
+        layer_idx = self.layer_idx + layer_diff
+        return self.layers[layer_idx].get_relative(frame_idx, cel_diff)
+
     def add_cel(self, frame_idx=None, layer_idx=None):
         if frame_idx is None:
             frame_idx = self.frame_idx
@@ -102,11 +112,6 @@ class XSheet(GObject.GObject):
         if self.layers[layer_idx].is_unset_at(frame_idx):
             self.layers[layer_idx][frame_idx] = Cel()
             self.emit("frame-changed")
-
-    def get_cel_relative(self, frame_diff=0, layer_diff=0):
-        frame_idx = self.frame_idx + frame_diff
-        layer_idx = self.layer_idx + layer_diff
-        return self.get_cel(frame_idx, layer_idx)
 
     @property
     def frames_length(self):
