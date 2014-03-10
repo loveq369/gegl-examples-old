@@ -50,7 +50,7 @@ class XSheetApp(GObject.GObject):
 
         self.play_hid = None
 
-        self.xsheet = XSheet(24 * 30)
+        self.xsheet = XSheet(24 * 60)
         self.xsheet.connect('frame-changed', self.xsheet_changed_cb)
         self.xsheet.connect('layer-changed', self.xsheet_changed_cb)
 
