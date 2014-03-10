@@ -42,6 +42,7 @@ class XSheetApp(GObject.GObject):
 
         self.onionskin_on = True
         self.eraser_on = False
+        self.force_add_cel = True
 
         self.surface = None
         self.surface_node = None
@@ -206,6 +207,9 @@ class XSheetApp(GObject.GObject):
         self.last_event = (x, y, time)
 
     def button_press_cb(self, widget, event):
+        if self.force_add_cel:
+            self.xsheet.add_cel()
+
         self.button_pressed = True
 
     def button_release_cb(self, widget, event):
