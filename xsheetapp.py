@@ -244,11 +244,20 @@ class XSheetApp(GObject.GObject):
 
         (x, y, time) = event.x, event.y, event.time
 
-        pressure = 0.5
+        pressure = event.get_axis(Gdk.AxisUse.PRESSURE)
+        if pressure is None:
+            pressure = 0.5
+
+        xtilt = event.get_axis(Gdk.AxisUse.XTILT)
+        ytilt = event.get_axis(Gdk.AxisUse.YTILT)
+        if xtilt is None or ytilt is None:
+            xtilt = 0
+            ytilt = 0
+
         dtime = (time - self.last_event[2])/1000.0
         if self.button_pressed:
             self.surface.begin_atomic()
-            self.brush.stroke_to(self.surface.backend, x, y, pressure, 0.0, 0.0, dtime)
+            self.brush.stroke_to(self.surface.backend, x, y, pressure, xtilt, ytilt, dtime)
             self.surface.end_atomic()
 
         self.last_event = (x, y, time)
