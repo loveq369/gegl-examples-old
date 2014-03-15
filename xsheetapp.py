@@ -213,10 +213,6 @@ class XSheetApp(GObject.GObject):
         toolbar.insert(settings_button, -1)
         settings_button.show()
 
-        # debug
-        dialog = SettingsDialog(window)
-        dialog.show()
-
         event_box = Gtk.EventBox()
         event_box.connect("motion-notify-event", self.motion_to_cb)
         event_box.connect("button-press-event", self.button_press_cb)
