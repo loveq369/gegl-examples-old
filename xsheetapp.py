@@ -53,8 +53,6 @@ class XSheetApp(GObject.GObject):
         self.surface = None
         self.surface_node = None
 
-        self.play_hid = None
-
         self.xsheet = XSheet(24 * 60)
         self.xsheet.connect('frame-changed', self.xsheet_changed_cb)
         self.xsheet.connect('layer-changed', self.xsheet_changed_cb)
@@ -298,11 +296,10 @@ class XSheetApp(GObject.GObject):
             self.surface_node = None
 
     def toggle_play_stop(self):
-        if self.play_hid == None:
-            self.play_hid = GObject.timeout_add(42, self.xsheet.next_frame, True)
+        if self.xsheet.is_playing:
+            self.xsheet.stop()
         else:
-            GObject.source_remove(self.play_hid)
-            self.play_hid = None
+            self.xsheet.play()
 
     def toggle_play_cb(self, widget):
         self.toggle_play_stop()

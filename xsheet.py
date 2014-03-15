@@ -24,6 +24,7 @@ class XSheet(GObject.GObject):
         self.frame_idx = 0
         self.layer_idx = 0
         self.layers = [CelList() for x in range(layers_length)]
+        self._play_hid = None
 
     def get_layers(self):
         return self.layers
@@ -64,6 +65,25 @@ class XSheet(GObject.GObject):
 
         self.emit("frame-changed")
         return True
+
+    def play(self):
+        if self._play_hid != None:
+            return False
+
+        self._play_hid = GObject.timeout_add(42, self.next_frame, True)
+        return True
+
+    def stop(self):
+        if self._play_hid == None:
+            return False
+
+        GObject.source_remove(self._play_hid)
+        self._play_hid = None
+        return True
+
+    @property
+    def is_playing(self):
+        return self._play_hid != None
 
     def previous_layer(self):
         if self.layer_idx == 0:
