@@ -39,6 +39,8 @@ class _XSheetDrawing(Gtk.DrawingArea):
         self._adjustment = adjustment
         self._pixbuf = None
         self._offset = 0
+        self._first_visible_frame = 0
+        self._last_visible_frames = 0
         self._zoom_factor = 1.0
         self._button_pressed = False
 
@@ -75,6 +77,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
         self._pixbuf = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
 
         self._adjustment.props.page_size = CEL_HEIGHT / self.virtual_height
+        self._calculate_visible_frames()
 
     def configure_event_cb(self, widget, event, data=None):
         self.configure()
@@ -87,6 +90,12 @@ class _XSheetDrawing(Gtk.DrawingArea):
         dy = self.virtual_height - self.get_allocated_height()
         dx = self._adjustment.props.upper - self._adjustment.props.page_size
         self._offset = -1 * self._adjustment.props.value * dy / dx
+        self._calculate_visible_frames()
+
+    def _calculate_visible_frames(self):
+        self._first_visible_frame = int(-1 * self._offset / CEL_HEIGHT / self._zoom_factor)
+        self._last_visible_frames = (self._first_visible_frame +
+                                     int(math.ceil(self.get_allocated_height() / CEL_HEIGHT / self._zoom_factor)))
 
     def scroll_changed_cb(self, adjustment):
         self.update_offset()
@@ -99,10 +108,9 @@ class _XSheetDrawing(Gtk.DrawingArea):
 
         drawing_context = cairo.Context(self._pixbuf)
 
-        self.draw_background(drawing_context)
-
         drawing_context.translate(0, self._offset)
 
+        self.draw_background(drawing_context)
         self.draw_selected_row(drawing_context)
         self.draw_grid(drawing_context)
         self.draw_numbers(drawing_context)
@@ -113,7 +121,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
 
     def draw_background(self, context):
         width = self.get_allocated_width()
-        height = self.get_allocated_height()
+        height = -1 * self._offset + self.get_allocated_height()
         current_layer_x = NUMBERS_WIDTH + self._xsheet.layer_idx * CEL_WIDTH
 
         context.set_source_rgb(*self._background_color)
@@ -126,14 +134,15 @@ class _XSheetDrawing(Gtk.DrawingArea):
         context.fill()
 
     def draw_selected_row(self, context):
-        for i in range(self._xsheet.frames_length):
-            if i == self._xsheet.frame_idx:
-                y = i * CEL_HEIGHT * self._zoom_factor
-                width = context.get_target().get_width()
-                context.set_source_rgb(*self._selected_color)
-                context.rectangle(0, y, width, CEL_HEIGHT * self._zoom_factor)
-                context.fill()
-                break
+        if (self._xsheet.frame_idx < self._first_visible_frame or
+            self._xsheet.frame_idx > self._last_visible_frames):
+            return
+
+        y = self._xsheet.frame_idx * CEL_HEIGHT * self._zoom_factor
+        width = context.get_target().get_width()
+        context.set_source_rgb(*self._selected_color)
+        context.rectangle(0, y, width, CEL_HEIGHT * self._zoom_factor)
+        context.fill()
 
     def draw_grid_horizontal(self, context):
         pass_frame_lines = False
@@ -149,7 +158,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
 
         width = context.get_target().get_width()
         context.set_source_rgb(*self._fg_color)
-        for i in range(self._xsheet.frames_length + 1):
+        for i in range(self._first_visible_frame, self._last_visible_frames + 1):
             if i % 24 == 0:
                 context.set_line_width(SECONDS_LINE_WIDTH)
             elif i % self._xsheet.frames_separation == 0:
@@ -170,8 +179,8 @@ class _XSheetDrawing(Gtk.DrawingArea):
         context.set_source_rgb(*self._fg_color)
         context.set_line_width(SOFT_LINE_WIDTH)
 
-        y1 = 0
-        y2 = self.virtual_height
+        y1 = self._offset
+        y2 = -1 * self._offset + self.get_allocated_height()
 
         context.move_to(NUMBERS_WIDTH, y1)
         context.line_to(NUMBERS_WIDTH, y2)
@@ -199,7 +208,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
         elif self._zoom_factor < 0.6:
             draw_step = 2
 
-        for i in range(self._xsheet.frames_length):
+        for i in range(self._first_visible_frame, self._last_visible_frames):
             if i % draw_step != 0:
                 continue
 
@@ -228,6 +237,8 @@ class _XSheetDrawing(Gtk.DrawingArea):
     def draw_elements(self, context):
         for layer_idx in range(self._xsheet.layers_length):
             layer = self._xsheet.get_layers()[layer_idx]
+            # FIXME cut the result of layer.get_changing_frames() to
+            # the visible frames.
             for frame_idx in layer.get_changing_frames():
                 cel = layer[frame_idx]
                 if cel is not None:
