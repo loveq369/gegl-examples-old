@@ -76,7 +76,9 @@ class _XSheetDrawing(Gtk.DrawingArea):
 
         self._pixbuf = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
 
-        self._adjustment.props.page_size = CEL_HEIGHT / self.virtual_height
+        self._adjustment.props.step_increment = CEL_HEIGHT / self.virtual_height
+        self._adjustment.props.page_increment = height / self.virtual_height / 2
+        self._adjustment.props.page_size = height / self.virtual_height
         self._calculate_visible_frames()
 
     def configure_event_cb(self, widget, event, data=None):
@@ -84,6 +86,12 @@ class _XSheetDrawing(Gtk.DrawingArea):
         return False
 
     def xsheet_changed_cb(self, xsheet):
+        if (self._xsheet.frame_idx < self._first_visible_frame):
+            self._adjustment.props.value -= self._adjustment.props.page_size
+
+        if (self._xsheet.frame_idx >= self._last_visible_frames):
+            self._adjustment.props.value += self._adjustment.props.page_size
+
         self.queue_draw()
 
     def update_offset(self):
@@ -283,9 +291,9 @@ class _XSheetDrawing(Gtk.DrawingArea):
 
         else:
             if event.direction == Gdk.ScrollDirection.UP:
-                self._adjustment.props.value -= self._adjustment.props.page_size
+                self._adjustment.props.value -= self._adjustment.props.step_increment
             elif event.direction == Gdk.ScrollDirection.DOWN:
-                self._adjustment.props.value += self._adjustment.props.page_size
+                self._adjustment.props.value += self._adjustment.props.step_increment
 
 
 class XSheetWidget(Gtk.Grid):
