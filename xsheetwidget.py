@@ -98,9 +98,11 @@ class _XSheetDrawing(Gtk.DrawingArea):
             return False
 
         drawing_context = cairo.Context(self._pixbuf)
-        drawing_context.translate(0, self._offset)
 
         self.draw_background(drawing_context)
+
+        drawing_context.translate(0, self._offset)
+
         self.draw_selected_row(drawing_context)
         self.draw_grid(drawing_context)
         self.draw_numbers(drawing_context)
@@ -110,8 +112,8 @@ class _XSheetDrawing(Gtk.DrawingArea):
         context.paint()
 
     def draw_background(self, context):
-        width = NUMBERS_WIDTH + self._xsheet.layers_length * CEL_WIDTH
-        height = self.virtual_height
+        width = self.get_allocated_width()
+        height = self.get_allocated_height()
         current_layer_x = NUMBERS_WIDTH + self._xsheet.layer_idx * CEL_WIDTH
 
         context.set_source_rgb(*self._background_color)
