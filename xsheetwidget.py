@@ -219,7 +219,7 @@ class _XSheetDrawing(Gtk.DrawingArea):
         elif self._zoom_factor < 0.6:
             draw_step = 2
 
-        for i in range(self._first_visible_frame, self._last_visible_frames):
+        for i in range(self._first_visible_frame, self._last_visible_frames + 1):
             if i % draw_step != 0:
                 continue
 
