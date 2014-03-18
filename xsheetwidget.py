@@ -42,7 +42,10 @@ class _XSheetDrawing(Gtk.DrawingArea):
         self._first_visible_frame = 0
         self._last_visible_frames = 0
         self._zoom_factor = 1.0
-        self._button_pressed = False
+        self._scrubbing = False
+        self._dragging = False
+        self._drag_start = 0
+        self._zooming = False
 
         self.add_events(Gdk.EventMask.POINTER_MOTION_MASK |
             Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK |
@@ -256,19 +259,38 @@ class _XSheetDrawing(Gtk.DrawingArea):
         return int((y - self._offset) / CEL_HEIGHT / self._zoom_factor)
 
     def button_press_cb(self, widget, event):
-        self._button_pressed = True
+        if event.button == 1:
+            self._scrubbing = True
+        elif event.button == 2:
+            self._dragging = True
+            self._drag_start = event.y
+        elif event.button == 3:
+            self._zooming = True
 
     def button_release_cb(self, widget, event):
-        self._button_pressed = False
+        if not self._scrubbing and not self._dragging:
+            frame_idx = self._get_frame_from_point(event.x, event.y)
+            self._xsheet.go_to_frame(frame_idx)
 
-        frame_idx = self._get_frame_from_point(event.x, event.y)
-        self._xsheet.go_to_frame(frame_idx)
+        if self._scrubbing:
+            self._scrubbing = False
+        if self._dragging:
+            self._dragging = False
+            self._drag_start = 0
+        if self._zooming:
+            self._zooming = False
 
     def motion_notify_cb(self, widget, event):
         x, y = event.x, event.y
         frame_idx = self._get_frame_from_point(event.x, event.y)
-        if self._button_pressed:
+        if self._scrubbing:
             self._xsheet.go_to_frame(frame_idx)
+        elif self._dragging:
+            dy = (self._drag_start - event.y) / self.virtual_height
+            self._adjustment.props.value += dy
+            self._drag_start = event.y
+        elif self._zooming:
+            print("zooming")
 
     def zoom(self, direction):
         new_zoom = self._zoom_factor + ZOOM_STEP * direction
