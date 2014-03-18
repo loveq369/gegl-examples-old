@@ -46,6 +46,8 @@ class _XSheetDrawing(Gtk.DrawingArea):
         self._dragging = False
         self._drag_start = 0
         self._zooming = False
+        self._zoom_start = 0
+        self._zoom_start_factor = None
 
         self.add_events(Gdk.EventMask.POINTER_MOTION_MASK |
             Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK |
@@ -266,9 +268,11 @@ class _XSheetDrawing(Gtk.DrawingArea):
             self._drag_start = event.y
         elif event.button == 3:
             self._zooming = True
+            self._zoom_start = event.y
+            self._zoom_start_factor = self._zoom_factor
 
     def button_release_cb(self, widget, event):
-        if not self._scrubbing and not self._dragging:
+        if not self._scrubbing and not self._dragging and not self._zooming:
             frame_idx = self._get_frame_from_point(event.x, event.y)
             self._xsheet.go_to_frame(frame_idx)
 
@@ -279,6 +283,8 @@ class _XSheetDrawing(Gtk.DrawingArea):
             self._drag_start = 0
         if self._zooming:
             self._zooming = False
+            self._zoom_start = 0
+            self._zoom_start_factor = None
 
     def motion_notify_cb(self, widget, event):
         x, y = event.x, event.y
@@ -290,14 +296,19 @@ class _XSheetDrawing(Gtk.DrawingArea):
             self._adjustment.props.value += dy
             self._drag_start = event.y
         elif self._zooming:
-            print("zooming")
+            self.zoom_by_offset(self._zoom_start - event.y)
 
-    def zoom(self, direction):
-        new_zoom = self._zoom_factor + ZOOM_STEP * direction
-        if new_zoom < MIN_ZOOM or new_zoom > MAX_ZOOM:
+    def zoom_by_direction(self, direction):
+        self.zoom(self._zoom_factor + ZOOM_STEP * direction)
+
+    def zoom_by_offset(self, offset):
+        self.zoom(self._zoom_start_factor - 0.01 * offset)
+
+    def zoom(self, value):
+        if value < MIN_ZOOM or value > MAX_ZOOM:
             return False
 
-        self._zoom_factor = new_zoom
+        self._zoom_factor = value
         self.configure()
         self.update_offset()
         self.queue_draw()
@@ -307,9 +318,9 @@ class _XSheetDrawing(Gtk.DrawingArea):
     def scroll_cb(self, widget, event):
         if event.state & Gdk.ModifierType.CONTROL_MASK:
             if event.direction == Gdk.ScrollDirection.UP:
-                self.zoom(1)
+                self.zoom_by_direction(1)
             elif event.direction == Gdk.ScrollDirection.DOWN:
-                self.zoom(-1)
+                self.zoom_by_direction(-1)
 
         else:
             if event.direction == Gdk.ScrollDirection.UP:
