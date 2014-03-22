@@ -1,10 +1,14 @@
-#!/usr/bin/env python
 import sys
 import os.path
 from gettext import gettext as _
 
-import gi
-from gi.repository import Gegl, Gtk, Gdk, GObject
+import sys
+sys.path.append("..")
+
+from gi.repository import Gegl
+from gi.repository import Gtk
+from gi.repository import Gdk
+from gi.repository import GObject
 from gi.repository import GdkPixbuf
 from gi.repository import GeglGtk3 as GeglGtk
 
@@ -29,11 +33,11 @@ def print_connections(node):
     print("")
 
 
-class XSheetApp(GObject.GObject):
+class Application(GObject.GObject):
     def __init__(self):
         GObject.GObject.__init__(self)
 
-        brush_file = open('brushes/classic/charcoal.myb')
+        brush_file = open('../brushes/classic/charcoal.myb')
         brush_info = brush.BrushInfo(brush_file.read())
         brush_info.set_color_rgb((0.0, 0.0, 0.0))
         self.default_eraser = brush_info.get_base_value("eraser")
@@ -369,11 +373,3 @@ class XSheetApp(GObject.GObject):
             self.xsheet.previous_layer()
         elif event.keyval == Gdk.KEY_Right:
             self.xsheet.next_layer()
-
-
-if __name__ == '__main__':
-    Gegl.init([])
-    Gtk.init([])
-
-    app = XSheetApp()
-    app.run()
